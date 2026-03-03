@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>990짐 | 매일 990원으로 시작하는 건강한 습관</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #2B5FC7;
+    --blue-dark: #1e4aaa;
+    --blue-light: #e8effe;
+    --white: #ffffff;
+    --black: #111111;
+    --gray: #666;
+    --light-gray: #f5f7ff;
+    --border: #dde4f5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--white); color: var(--black); font-family: 'Noto Sans KR', sans-serif; overflow-x: hidden; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 1.5rem;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-size: 1.4rem; font-weight: 900; color: var(--blue); letter-spacing: -1px; }
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+  .nav-links a { color: var(--gray); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--blue); }
+  .nav-cta { background: var(--blue); color: var(--white); border: none; padding: 0.55rem 1.2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; white-space: nowrap; }
+  .nav-cta:hover { background: var(--blue-dark); }
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    nav { padding: 0.9rem 1.2rem; }
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: flex-start;
+    padding: 7rem 1.5rem 3rem;
+    background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 60%);
+    position: relative; overflow: hidden;
+  }
+  .hero-bg-circle { position: absolute; right: -15%; top: 50%; transform: translateY(-50%); width: min(500px,70vw); height: min(500px,70vw); border-radius: 50%; background: radial-gradient(circle, rgba(43,95,199,0.1) 0%, transparent 70%); z-index: 0; }
+  .hero-badge { display: inline-block; background: var(--blue-light); color: var(--blue); font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.9rem; border-radius: 20px; margin-bottom: 1.2rem; position: relative; z-index: 1; border: 1px solid rgba(43,95,199,0.2); }
+  .hero h1 { font-size: clamp(2rem, 7vw, 5rem); font-weight: 900; line-height: 1.2; letter-spacing: -1px; color: var(--black); position: relative; z-index: 1; word-break: keep-all; }
+  .hero h1 .accent { color: var(--blue); }
+  .hero-sub { margin-top: 1.2rem; font-size: clamp(0.9rem, 2vw, 1.05rem); color: var(--gray); line-height: 1.8; max-width: 480px; position: relative; z-index: 1; word-break: keep-all; }
+  .hero-actions { margin-top: 2rem; display: flex; gap: 0.8rem; flex-wrap: wrap; position: relative; z-index: 1; }
+  .btn-primary { background: var(--blue); color: var(--white); border: none; padding: 0.9rem 2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-outline { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); padding: 0.9rem 2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 600; font-size: 0.95rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+  .btn-outline:hover { background: var(--blue-light); }
+  .hero-stat-row { margin-top: 3rem; display: flex; gap: 2rem; flex-wrap: wrap; position: relative; z-index: 1; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  .hero-stat .num { font-size: 1.6rem; font-weight: 900; color: var(--blue); }
+  .hero-stat .label { font-size: 0.75rem; color: var(--gray); margin-top: 0.15rem; }
+
+  /* SECTIONS */
+  .section { padding: 4rem 1.5rem; background: var(--white); }
+  .section-alt { padding: 4rem 1.5rem; background: var(--light-gray); }
+  .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--blue); margin-bottom: 0.6rem; }
+  .section-title { font-size: clamp(1.5rem, 3.5vw, 2.4rem); font-weight: 900; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 0.8rem; color: var(--black); word-break: keep-all; }
+  .section-desc { color: var(--gray); font-size: 0.9rem; line-height: 1.8; max-width: 500px; word-break: keep-all; }
+
+  /* PLANS */
+  .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
+  .plan-card { border: 1.5px solid var(--border); padding: 2rem 1.5rem; position: relative; background: var(--white); border-radius: 8px; transition: box-shadow 0.2s, transform 0.2s; }
+  .plan-card:hover { box-shadow: 0 8px 32px rgba(43,95,199,0.1); transform: translateY(-3px); }
+  .plan-card.featured { border-color: var(--blue); box-shadow: 0 4px 24px rgba(43,95,199,0.12); }
+  .plan-badge { position: absolute; top: -1px; right: 1.2rem; background: var(--blue); color: var(--white); font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 0 0 6px 6px; }
+  .plan-name { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.8rem; }
+  .plan-price { font-size: 2.4rem; font-weight: 900; color: var(--black); letter-spacing: -1px; }
+  .plan-price .won { font-size: 1.2rem; }
+  .plan-unit { font-size: 0.75rem; color: #aaa; margin-top: 0.2rem; }
+  .plan-divider { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .plan-features li { font-size: 0.85rem; color: #444; display: flex; align-items: center; gap: 0.5rem; }
+  .plan-features li::before { content: '✓'; color: var(--blue); font-weight: 700; flex-shrink: 0; }
+  .plan-btn { display: block; width: 100%; margin-top: 1.5rem; padding: 0.85rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; text-align: center; border-radius: 4px; transition: background 0.15s; border: none; }
+  .plan-btn.primary { background: var(--blue); color: var(--white); }
+  .plan-btn.primary:hover { background: var(--blue-dark); }
+  .plan-btn.secondary { background: var(--blue-light); color: var(--blue); border: 1.5px solid var(--border); }
+  .plan-btn.secondary:hover { border-color: var(--blue); }
+
+  /* FEATURES */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
+  .feature-item { padding: 1.5rem; border: 1.5px solid var(--border); background: var(--white); border-radius: 8px; transition: border-color 0.2s; }
+  .feature-item:hover { border-color: var(--blue); }
+  .feature-icon { font-size: 1.8rem; margin-bottom: 0.8rem; display: block; }
+  .feature-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--black); }
+  .feature-desc { font-size: 0.82rem; color: var(--gray); line-height: 1.6; word-break: keep-all; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; margin-top: 2.5rem; max-width: 680px; }
+  .step { display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-size: 2rem; font-weight: 900; color: var(--blue-light); line-height: 1; flex-shrink: 0; width: 50px; transition: color 0.2s; }
+  .step:hover .step-num { color: var(--blue); }
+  .step-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--black); }
+  .step-desc { font-size: 0.83rem; color: var(--gray); line-height: 1.7; word-break: keep-all; }
+
+  /* FAQ */
+  .faq-list { margin-top: 2.5rem; max-width: 680px; }
+  .faq-item { border-bottom: 1px solid var(--border); }
+  .faq-q { width: 100%; background: none; border: none; color: var(--black); text-align: left; padding: 1.2rem 0; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; word-break: keep-all; }
+  .faq-q:hover { color: var(--blue); }
+  .faq-icon { color: var(--blue); font-size: 1.2rem; transition: transform 0.2s; flex-shrink: 0; }
+  .faq-a { font-size: 0.84rem; color: var(--gray); line-height: 1.8; padding-bottom: 1.2rem; display: none; word-break: keep-all; }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-icon { transform: rotate(45deg); }
+
+  /* SIGNUP */
+  .signup-section { padding: 4rem 1.5rem; background: var(--blue); color: var(--white); }
+  .signup-section .section-label { color: rgba(255,255,255,0.6); }
+  .signup-section .section-title { color: var(--white); }
+  .signup-section .section-desc { color: rgba(255,255,255,0.7); }
+  .signup-form { margin-top: 2rem; max-width: 480px; display: flex; flex-direction: column; gap: 0.9rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-label { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.8); }
+  .form-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; border-radius: 4px; }
+  .form-input::placeholder { color: rgba(255,255,255,0.4); }
+  .form-input:focus { border-color: rgba(255,255,255,0.7); }
+  .form-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; cursor: pointer; border-radius: 4px; }
+  .form-select option { background: #1e4aaa; }
+  .form-submit { background: var(--white); color: var(--blue); border: none; padding: 1rem; font-family: 'Noto Sans KR', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; border-radius: 4px; margin-top: 0.3rem; transition: background 0.15s; }
+  .form-submit:hover { background: #f0f4ff; }
+  .form-note { font-size: 0.72rem; color: rgba(255,255,255,0.45); line-height: 1.6; word-break: keep-all; }
+
+  /* FOOTER */
+  footer { background: #0d1a3a; padding: 3rem 1.5rem 2rem; }
+  .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem; }
+  .footer-logo { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 0.6rem; display: block; }
+  .footer-brand p { font-size: 0.8rem; color: #6a7fa8; line-height: 1.7; }
+  .footer-links-group h4 { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #4a5f88; margin-bottom: 0.8rem; text-transform: uppercase; }
+  .footer-links-group ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .footer-links-group a { color: #6a7fa8; text-decoration: none; font-size: 0.82rem; transition: color 0.2s; }
+  .footer-links-group a:hover { color: #fff; }
+  .footer-bottom { border-top: 1px solid #1a2a50; padding-top: 1.2rem; }
+  .footer-info p { font-size: 0.74rem; color: #3a4f72; line-height: 1.8; word-break: keep-all; }
+  .footer-info strong { color: #5a6f92; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">990짐</div>
+  <ul class="nav-links">
+    <li><a href="#plans">요금제</a></li>
+    <li><a href="#features">시설안내</a></li>
+    <li><a href="#how">이용방법</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('signup').scrollIntoView({behavior:'smooth'})">구독 신청</button>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg-circle"></div>
+  <div class="hero-badge">🏋️ 월 구독 헬스장</div>
+  <h1>하루 <span class="accent">990원</span>으로<br>시작하는<br>건강한 습관</h1>
+  <p class="hero-sub">복잡한 계약 없이, 언제든 해지 가능한 구독형 헬스장. 합리적인 가격으로 프리미엄 시설을 경험하세요.</p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">요금제 보기</button>
+    <button class="btn-outline" onclick="document.getElementById('signup').scrollIntoView({behavior:'smooth'})">구독 신청하기</button>
+  </div>
+  <div class="hero-stat-row">
+    <div class="hero-stat"><div class="num">990원~</div><div class="label">일 환산 최저가</div></div>
+    <div class="hero-stat"><div class="num">24시간</div><div class="label">연중무휴 운영</div></div>
+    <div class="hero-stat"><div class="num">언제든</div><div class="label">자유로운 해지</div></div>
+  </div>
+</section>
+
+<section class="section-alt" id="plans">
+  <div class="section-label">구독 요금제</div>
+  <h2 class="section-title">합리적인 가격으로 선택하세요</h2>
+  <p class="section-desc">불필요한 약정 없이 나에게 맞는 플랜을 선택하세요. 매월 자동 결제, 언제든지 해지 가능합니다.</p>
+  <div class="plans-grid">
+    <div class="plan-card">
+      <div class="plan-name">베이직</div>
+      <div class="plan-price"><span class="won">₩</span>29,900</div>
+      <div class="plan-unit">/ 월 (일 환산 약 990원)</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>웨이트 트레이닝 구역</li>
+        <li>유산소 기구 이용</li>
+        <li>샤워실 이용</li>
+        <li>락커 이용</li>
+      </ul>
+      <button class="plan-btn secondary">베이직 구독</button>
+    </div>
+    <div class="plan-card featured">
+      <div class="plan-badge">BEST</div>
+      <div class="plan-name">스탠다드</div>
+      <div class="plan-price"><span class="won">₩</span>49,900</div>
+      <div class="plan-unit">/ 월</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>베이직 전체 포함</li>
+        <li>GX 그룹 수업 참여</li>
+        <li>스트레칭 존 이용</li>
+        <li>전용 락커 배정</li>
+        <li>게스트 1회/월 이용권</li>
+      </ul>
+      <button class="plan-btn primary">스탠다드 구독</button>
+    </div>
+    <div class="plan-card">
+      <div class="plan-name">프리미엄</div>
+      <div class="plan-price"><span class="won">₩</span>79,900</div>
+      <div class="plan-unit">/ 월</div>
+      <hr class="plan-divider">
+      <ul class="plan-features">
+        <li>스탠다드 전체 포함</li>
+        <li>PT 체험 1회/월</li>
+        <li>인바디 측정 무제한</li>
+        <li>영양 상담 서비스</li>
+        <li>게스트 3회/월 이용권</li>
+        <li>운동복 무료 대여</li>
+      </ul>
+      <button class="plan-btn secondary">프리미엄 구독</button>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="section-label">시설 안내</div>
+  <h2 class="section-title">프리미엄 시설을 합리적으로</h2>
+  <div class="features-grid">
+    <div class="feature-item"><span class="feature-icon">🏋️</span><div class="feature-title">웨이트 존</div><p class="feature-desc">최신 머신과 프리웨이트 기구를 갖춘 넓은 트레이닝 공간.</p></div>
+    <div class="feature-item"><span class="feature-icon">🚴</span><div class="feature-title">유산소 구역</div><p class="feature-desc">트레드밀, 사이클, 로잉머신 등 다양한 유산소 기구 보유.</p></div>
+    <div class="feature-item"><span class="feature-icon">🧘</span><div class="feature-title">GX 스튜디오</div><p class="feature-desc">필라테스, 요가, 스피닝 등 전문 강사진의 그룹 수업.</p></div>
+    <div class="feature-item"><span class="feature-icon">🚿</span><div class="feature-title">샤워 & 락커</div><p class="feature-desc">청결하게 관리되는 샤워 시설과 개인 락커 제공.</p></div>
+    <div class="feature-item"><span class="feature-icon">📊</span><div class="feature-title">인바디 측정</div><p class="feature-desc">체성분 분석으로 효과적인 운동 계획을 세우세요.</p></div>
+    <div class="feature-item"><span class="feature-icon">🕐</span><div class="feature-title">24시간 운영</div><p class="feature-desc">365일 언제든지 내 스케줄에 맞게 이용 가능.</p></div>
+  </div>
+</section>
+
+<section class="section-alt" id="how">
+  <div class="section-label">이용 방법</div>
+  <h2 class="section-title">3단계로 시작하세요</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <div class="step-title">요금제 선택 & 구독 신청</div>
+        <p class="step-desc">나에게 맞는 플랜을 선택하고 간단한 정보를 입력하세요. 신용카드 또는 체크카드로 간편하게 결제됩니다.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <div class="step-title">회원권 등록 & 입장 키 수령</div>
+        <p class="step-desc">결제 완료 후 매장 방문 시 신분증을 지참하면 즉시 회원권을 등록하고 바로 이용할 수 있습니다.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <div class="step-title">매월 자동 결제 & 자유로운 해지</div>
+        <p class="step-desc">매월 결제일에 자동으로 갱신됩니다. 언제든지 전화 또는 방문으로 해지 신청이 가능합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="section-label">자주 묻는 질문</div>
+  <h2 class="section-title">궁금한 점이 있으신가요?</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">구독은 언제든지 해지할 수 있나요? <span class="faq-icon">+</span></button>
+      <div class="faq-a">네, 언제든지 해지 가능합니다. 당월 결제 이후 해지를 신청하시면 다음 달부터 자동 결제가 중단됩니다. 위약금이나 추가 비용은 없습니다.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">결제는 어떻게 이루어지나요? <span class="faq-icon">+</span></button>
+      <div class="faq-a">최초 구독 시 등록한 카드로 매월 결제일에 자동으로 결제됩니다. 토스페이먼츠 빌링 시스템을 통해 안전하게 처리됩니다.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">중간에 요금제를 변경할 수 있나요? <span class="faq-icon">+</span></button>
+      <div class="faq-a">가능합니다. 현재 구독 기간이 끝난 후 다음 달부터 변경된 요금제가 적용됩니다. 업그레이드는 즉시 반영됩니다.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">운영 시간은 어떻게 되나요? <span class="faq-icon">+</span></button>
+      <div class="faq-a">990짐은 연중무휴 24시간 운영됩니다. 공휴일, 명절에도 동일하게 이용하실 수 있습니다.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">첫 달 이용 후 마음에 안 들면 환불되나요? <span class="faq-icon">+</span></button>
+      <div class="faq-a">이용 시작 후 7일 이내에는 미이용 조건으로 전액 환불이 가능합니다. 이후에는 이용일수 차감 후 잔여 금액을 환불해드립니다.</div>
+    </div>
+  </div>
+</section>
+
+<section class="signup-section" id="signup">
+  <div class="section-label">구독 신청</div>
+  <h2 class="section-title">지금 바로 시작하세요</h2>
+  <p class="section-desc">간단한 정보를 입력하시면 담당자가 확인 후 연락드립니다.</p>
+  <div class="signup-form">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" placeholder="홍길동"></div>
+      <div class="form-group"><label class="form-label">연락처</label><input type="tel" class="form-input" placeholder="010-0000-0000"></div>
+    </div>
+    <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" placeholder="example@email.com"></div>
+    <div class="form-group">
+      <label class="form-label">구독 플랜</label>
+      <select class="form-select">
+        <option value="">플랜을 선택하세요</option>
+        <option>베이직 (29,900원/월)</option>
+        <option>스탠다드 (49,900원/월)</option>
+        <option>프리미엄 (79,900원/월)</option>
+      </select>
+    </div>
+    <button class="form-submit" onclick="handleSubmit()">구독 신청하기 →</button>
+    <p class="form-note">개인정보는 구독 서비스 제공 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <span class="footer-logo">990짐</span>
+      <p>매일 990원으로 시작하는<br>건강한 라이프스타일.</p>
+    </div>
+    <div class="footer-links-group">
+      <h4>서비스</h4>
+      <ul>
+        <li><a href="#plans">요금제</a></li>
+        <li><a href="#features">시설안내</a></li>
+        <li><a href="#how">이용방법</a></li>
+      </ul>
+    </div>
+    <div class="footer-links-group">
+      <h4>고객지원</h4>
+      <ul>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#">이용약관</a></li>
+        <li><a href="#">개인정보처리방침</a></li>
+      </ul>
+    </div>
+    <div class="footer-links-group">
+      <h4>연락처</h4>
+      <ul>
+        <li><a href="#">전화: 070-0000-0000</a></li>
+        <li><a href="#">이메일: hello@the990.co.kr</a></li>
+        <li><a href="#">카카오톡 채널</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-info">
+      <p><strong>상호명:</strong> 990짐 &nbsp;|&nbsp; <strong>대표자:</strong> 홍길동 &nbsp;|&nbsp; <strong>사업자등록번호:</strong> 000-00-00000</p>
+      <p><strong>주소:</strong> 서울특별시 OO구 OO로 000 &nbsp;|&nbsp; <strong>통신판매업신고:</strong> 제2024-서울OO-0000호</p>
+      <p style="margin-top:0.5rem;color:#2a3a5a">© 2025 990짐. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(btn) {
+  var item = btn.closest('.faq-item');
+  var isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(function(i){ i.classList.remove('open'); });
+  if (!isOpen) item.classList.add('open');
+}
+function handleSubmit() {
+  alert('구독 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
+}
+var observer = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
+  });
+}, {threshold:0.1});
+document.querySelectorAll('.plan-card,.feature-item,.step,.faq-item').forEach(function(el){
+  el.style.opacity='0'; el.style.transform='translateY(12px)';
+  el.style.transition='opacity 0.4s ease,transform 0.4s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
