@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>990짐 | 당신의 하루가 머무르는 순간</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <style>
   :root {
     --blue: #2B5FC7;
@@ -148,6 +149,24 @@
   .footer-info p { font-size: 0.74rem; color: #3a4f72; line-height: 1.8; word-break: keep-all; }
   .footer-info strong { color: #5a6f92; }
 
+  /* PAYMENT MODAL */
+  .pay-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 1rem; }
+  .pay-modal-overlay.active { display: flex; }
+  .pay-modal-box { background: #fff; border-radius: 12px; max-width: 460px; width: 100%; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .pay-modal-box h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.3rem; color: var(--black); }
+  .pay-modal-box .pay-plan-info { font-size: 0.85rem; color: var(--gray); margin-bottom: 1.5rem; }
+  .pay-modal-box .pay-plan-info strong { color: var(--blue); }
+  .pay-form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+  .pay-form-label { font-size: 0.78rem; font-weight: 700; color: #444; }
+  .pay-form-input { border: 1.5px solid var(--border); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; border-radius: 6px; color: var(--black); transition: border-color 0.2s; }
+  .pay-form-input:focus { border-color: var(--blue); }
+  .pay-btn-row { display: flex; gap: 0.7rem; margin-top: 1.2rem; }
+  .pay-cancel-btn { flex: 1; padding: 0.85rem; background: #f5f7ff; border: 1.5px solid var(--border); border-radius: 6px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--gray); cursor: pointer; }
+  .pay-submit-btn { flex: 2; padding: 0.85rem; background: var(--blue); border: none; border-radius: 6px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 700; color: #fff; cursor: pointer; transition: background 0.15s; }
+  .pay-submit-btn:hover { background: var(--blue-dark); }
+  .pay-submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+  .pay-note { font-size: 0.72rem; color: #aaa; text-align: center; margin-top: 0.8rem; line-height: 1.6; }
+
   @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
   /* MODAL */
@@ -208,7 +227,7 @@
         <li>샤워실 이용</li>
         <li>락커 이용</li>
       </ul>
-      <button class="plan-btn secondary">베이직 구독</button>
+      <button class="plan-btn secondary" onclick="openPayModal('베이직', 39000)">베이직 구독</button>
     </div>
     <div class="plan-card featured">
       <div class="plan-badge">BEST</div>
@@ -223,7 +242,7 @@
         <li>전용 락커 배정</li>
         <li>게스트 1회/월 이용권</li>
       </ul>
-      <button class="plan-btn primary">스탠다드 구독</button>
+      <button class="plan-btn primary" onclick="openPayModal('스탠다드', 69000)">스탠다드 구독</button>
     </div>
     <div class="plan-card">
       <div class="plan-name">프리미엄</div>
@@ -238,7 +257,7 @@
         <li>게스트 2회/월 이용권</li>
         <li>운동복 무료 대여</li>
       </ul>
-      <button class="plan-btn secondary">프리미엄 구독</button>
+      <button class="plan-btn secondary" onclick="openPayModal('프리미엄', 99000)">프리미엄 구독</button>
     </div>
   </div>
 </section>
@@ -334,6 +353,31 @@
     <p class="form-note">개인정보는 구독 서비스 제공 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.</p>
   </div>
 </section>
+
+<!-- 결제 모달 -->
+<div class="pay-modal-overlay" id="pay-modal">
+  <div class="pay-modal-box">
+    <h3>구독 신청</h3>
+    <p class="pay-plan-info"><strong id="pay-plan-name">스탠다드</strong> · <strong id="pay-plan-price">69,000</strong>원/월 자동결제</p>
+    <div class="pay-form-group">
+      <label class="pay-form-label">이름</label>
+      <input type="text" class="pay-form-input" id="pay-name" placeholder="홍길동">
+    </div>
+    <div class="pay-form-group">
+      <label class="pay-form-label">연락처</label>
+      <input type="tel" class="pay-form-input" id="pay-phone" placeholder="010-0000-0000">
+    </div>
+    <div class="pay-form-group">
+      <label class="pay-form-label">이메일</label>
+      <input type="email" class="pay-form-input" id="pay-email" placeholder="example@email.com">
+    </div>
+    <div class="pay-btn-row">
+      <button class="pay-cancel-btn" onclick="closePayModal()">취소</button>
+      <button class="pay-submit-btn" id="pay-submit-btn" onclick="requestBilling()">카드 등록 & 구독 시작 →</button>
+    </div>
+    <p class="pay-note">카드 정보는 토스페이먼츠가 안전하게 보관합니다.<br>첫 결제는 카드 등록 즉시 진행됩니다.</p>
+  </div>
+</div>
 
 <!-- 이용약관 모달 -->
 <div class="modal-overlay" id="modal-terms">
@@ -438,6 +482,55 @@
 </footer>
 
 <script>
+// 토스페이먼츠 빌링 연동
+var CLIENT_KEY = 'test_ck_Z1aOwX7K8mjnQP7y1e4q3yQxzvNP';
+var selectedPlan = { name: '', price: 0 };
+
+function openPayModal(planName, price) {
+  selectedPlan = { name: planName, price: price };
+  document.getElementById('pay-plan-name').textContent = planName;
+  document.getElementById('pay-plan-price').textContent = price.toLocaleString();
+  document.getElementById('pay-modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closePayModal() {
+  document.getElementById('pay-modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+async function requestBilling() {
+  var name = document.getElementById('pay-name').value.trim();
+  var phone = document.getElementById('pay-phone').value.trim();
+  var email = document.getElementById('pay-email').value.trim();
+
+  if (!name || !phone || !email) {
+    alert('이름, 연락처, 이메일을 모두 입력해주세요.');
+    return;
+  }
+
+  var btn = document.getElementById('pay-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+
+  try {
+    var tossPayments = TossPayments(CLIENT_KEY);
+    var customerKey = 'customer_' + Date.now();
+
+    await tossPayments.requestBillingAuth('카드', {
+      customerKey: customerKey,
+      successUrl: window.location.origin + '/success.html?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name),
+      failUrl: window.location.origin + '/fail.html',
+      customerName: name,
+      customerEmail: email,
+    });
+  } catch(e) {
+    console.error(e);
+    alert('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
+    btn.disabled = false;
+    btn.textContent = '카드 등록 & 구독 시작 →';
+  }
+}
+
 function openModal(type) {
   document.getElementById('modal-' + type).classList.add('active');
   document.body.style.overflow = 'hidden';
