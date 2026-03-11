@@ -518,7 +518,7 @@ async function requestBilling() {
     var payment = tossPayments.payment({ customerKey: customerKey });
 
     await payment.requestBillingAuth({
-      method: '카드',
+      method: 'CARD',
       successUrl: window.location.origin + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1',
       failUrl: window.location.origin + '?fail=1',
       customerName: name,
