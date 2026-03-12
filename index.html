@@ -232,7 +232,8 @@
         <li>웨이트 트레이닝 구역</li>
         <li>유산소 기구 이용</li>
         <li>스트레칭 존 이용</li>
-        <li>탈의실 & 샤워실 & 공용락커 이용</li>
+        <li>샤워실 이용</li>
+        <li>공용락커 이용</li>
         <li>온보딩 1회권</li>
       </ul>
       <button class="plan-btn secondary" onclick="openPayModal('베이직', 39000)">베이직 구독</button>
@@ -246,7 +247,6 @@
       <ul class="plan-features">
         <li>베이직 전체 포함</li>
         <li>운동복 무료 대여</li>
-        <li>인바디 측정 무제한</li>
         <li>정규 PT 1회 체험권</li>
         <li>런990크루 게스트 1회 체험권</li>
       </ul>
@@ -259,8 +259,8 @@
       <hr class="plan-divider">
       <ul class="plan-features">
         <li>스탠다드 전체 포함</li>
-        <li>GX 룸 수업 참여</li>
-        <li>스피닝 룸 수업 참여</li>
+        <li>GX 그룹 수업 참여</li>
+        <li>인바디 측정 무제한</li>
         <li>영양 상담 서비스</li>
         <li>게스트 1회 무료 이용권</li>
       </ul>
@@ -438,9 +438,9 @@
       <h4>5. 개인정보 처리의 위탁</h4>
       <p>결제 처리: 토스페이먼츠(주) / 목적: 구독 결제 및 빌링 처리</p>
       <h4>6. 이용자의 권리</h4>
-      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(<span id="privacy-email2"></span>) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
+      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(readybody1@naver.com) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
       <h4>7. 개인정보 보호책임자</h4>
-      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: <span id="privacy-email"></span></p>
+      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: readybody1@naver.com</p>
       <h4>8. 개인정보처리방침 변경</h4>
       <p>본 방침은 법령 또는 서비스 변경에 따라 내용이 변경될 수 있으며, 변경 시 홈페이지를 통해 공지합니다.</p>
       <p style="margin-top:1.5rem;color:#999">시행일: 2026년 1월 1일 | 상호: 990짐 | 사업자등록번호: 177-12-02806</p>
@@ -474,7 +474,7 @@
       <h4>연락처</h4>
       <ul>
         <li><a href="#">전화: 02-371-2684</a></li>
-        <li><a href="#">이메일: <span id="footer-email"></span></a></li>
+        <li><a href="#">이메일: readybody1@naver.com</a></li>
         <li><a href="http://pf.kakao.com/_SxakPn" target="_blank">카카오톡 채널</a></li>
       </ul>
     </div>
@@ -564,4 +564,12 @@ function toggleFaq(btn) {
 function handleSubmit() {
   alert('구독 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
 }
-var observer = new IntersectionObs
+var observer = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
+  });
+}, {threshold:0.1});
+document.querySelectorAll('.plan-card,.feature-item,.step,.faq-item').forEach(function(el){ el.style.opacity='0'; el.style.transform='translateY(16px)'; el.style.transition='opacity 0.5s ease, transform 0.5s ease'; observer.observe(el); });
+</script>
+</body>
+</html>
