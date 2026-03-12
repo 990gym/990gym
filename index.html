@@ -438,9 +438,9 @@
       <h4>5. 개인정보 처리의 위탁</h4>
       <p>결제 처리: 토스페이먼츠(주) / 목적: 구독 결제 및 빌링 처리</p>
       <h4>6. 이용자의 권리</h4>
-      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(readybody1@naver.com) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
+      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="04766165607d666b607d35446a657261762a676b69">[email&#160;protected]</a>) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
       <h4>7. 개인정보 보호책임자</h4>
-      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: readybody1@naver.com</p>
+      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88faede9ecf1eae7ecf1b9c8e6e9feedfaa6ebe7e5">[email&#160;protected]</a></p>
       <h4>8. 개인정보처리방침 변경</h4>
       <p>본 방침은 법령 또는 서비스 변경에 따라 내용이 변경될 수 있으며, 변경 시 홈페이지를 통해 공지합니다.</p>
       <p style="margin-top:1.5rem;color:#999">시행일: 2026년 1월 1일 | 상호: 990짐 | 사업자등록번호: 177-12-02806</p>
@@ -474,7 +474,7 @@
       <h4>연락처</h4>
       <ul>
         <li><a href="#">전화: 02-371-2684</a></li>
-        <li><a href="#">이메일: readybody1@naver.com</a></li>
+        <li><a href="#">이메일: <span class="__cf_email__" data-cfemail="d4a6b1b5b0adb6bbb0ade594bab5a2b1a6fab7bbb9">[email&#160;protected]</span></a></li>
         <li><a href="http://pf.kakao.com/_SxakPn" target="_blank">카카오톡 채널</a></li>
       </ul>
     </div>
@@ -488,7 +488,7 @@
   </div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // 토스페이먼츠 빌링 연동
 var CLIENT_KEY = 'test_ck_Z1aOwX7K8mjnQP7y1e4q3yQxzvNP';
 var selectedPlan = { name: '', price: 0 };
@@ -530,6 +530,7 @@ async function requestBilling() {
       failUrl: window.location.origin + '?fail=1',
       customerName: name,
       customerEmail: email,
+      customerMobilePhone: phone.replace(/-/g, ''),
     });
   } catch(e) {
     console.error(e);
@@ -564,12 +565,4 @@ function toggleFaq(btn) {
 function handleSubmit() {
   alert('구독 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
 }
-var observer = new IntersectionObserver(function(entries){
-  entries.forEach(function(e){
-    if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
-  });
-}, {threshold:0.1});
-document.querySelectorAll('.plan-card,.feature-item,.step,.faq-item').forEach(function(el){ el.style.opacity='0'; el.style.transform='translateY(16px)'; el.style.transition='opacity 0.5s ease, transform 0.5s ease'; observer.observe(el); });
-</script>
-</body>
-</html>
+var observer = new IntersectionObs
