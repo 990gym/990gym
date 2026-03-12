@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://the990.co.kr/og-image.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://js.tosspayments.com/v2/standard"></script>
+<script src="https://js.tosspayments.com/v1/payment"></script>
 <style>
   :root {
     --blue: #2B5FC7;
@@ -232,8 +232,7 @@
         <li>웨이트 트레이닝 구역</li>
         <li>유산소 기구 이용</li>
         <li>스트레칭 존 이용</li>
-        <li>샤워실 이용</li>
-        <li>공용락커 이용</li>
+        <li>탈의실 & 샤워실 & 공용락커 이용</li>
         <li>온보딩 1회권</li>
       </ul>
       <button class="plan-btn secondary" onclick="openPayModal('베이직', 39000)">베이직 구독</button>
@@ -247,6 +246,7 @@
       <ul class="plan-features">
         <li>베이직 전체 포함</li>
         <li>운동복 무료 대여</li>
+        <li>인바디 측정 무제한</li>
         <li>정규 PT 1회 체험권</li>
         <li>런990크루 게스트 1회 체험권</li>
       </ul>
@@ -259,8 +259,8 @@
       <hr class="plan-divider">
       <ul class="plan-features">
         <li>스탠다드 전체 포함</li>
-        <li>GX 그룹 수업 참여</li>
-        <li>인바디 측정 무제한</li>
+        <li>GX 룸 수업 참여</li>
+        <li>스피닝 룸 수업 참여</li>
         <li>영양 상담 서비스</li>
         <li>게스트 1회 무료 이용권</li>
       </ul>
@@ -438,9 +438,9 @@
       <h4>5. 개인정보 처리의 위탁</h4>
       <p>결제 처리: 토스페이먼츠(주) / 목적: 구독 결제 및 빌링 처리</p>
       <h4>6. 이용자의 권리</h4>
-      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(readybody1@naver.com) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
+      <p>이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 요청은 이메일(<span id="privacy-email2"></span>) 또는 전화(02-371-2684)로 하실 수 있습니다.</p>
       <h4>7. 개인정보 보호책임자</h4>
-      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: readybody1@naver.com</p>
+      <p>이름: 노준석 | 연락처: 02-371-2684 | 이메일: <span id="privacy-email"></span></p>
       <h4>8. 개인정보처리방침 변경</h4>
       <p>본 방침은 법령 또는 서비스 변경에 따라 내용이 변경될 수 있으며, 변경 시 홈페이지를 통해 공지합니다.</p>
       <p style="margin-top:1.5rem;color:#999">시행일: 2026년 1월 1일 | 상호: 990짐 | 사업자등록번호: 177-12-02806</p>
@@ -474,7 +474,7 @@
       <h4>연락처</h4>
       <ul>
         <li><a href="#">전화: 02-371-2684</a></li>
-        <li><a href="#">이메일: readybody1@naver.com</a></li>
+        <li><a href="#">이메일: <span id="footer-email"></span></a></li>
         <li><a href="http://pf.kakao.com/_SxakPn" target="_blank">카카오톡 채널</a></li>
       </ul>
     </div>
@@ -490,7 +490,7 @@
 
 <script>
 // 토스페이먼츠 빌링 연동
-var CLIENT_KEY = 'test_ck_Z1aOwX7K8mjnQP7y1e4q3yQxzvNP';
+var CLIENT_KEY = 'test_ck_GePWvyJnrKOGNgXQl0kqrgLzN97E';
 var selectedPlan = { name: '', price: 0 };
 
 function openPayModal(planName, price) {
@@ -510,8 +510,16 @@ async function requestBilling() {
   var phone = document.getElementById('pay-phone').value.trim();
   var email = document.getElementById('pay-email').value.trim();
 
-  if (!name || !phone || !email) {
-    alert('이름, 연락처, 이메일을 모두 입력해주세요.');
+  if (!name) {
+    alert('이름을 입력해주세요.');
+    return;
+  }
+  if (!phone || !/^01[0-9]{1}[-]?[0-9]{3,4}[-]?[0-9]{4}$/.test(phone.replace(/-/g,''))) {
+    alert('올바른 휴대폰 번호를 입력해주세요.\n예) 010-1234-5678');
+    return;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('올바른 이메일 주소를 입력해주세요.\n예) example@email.com');
     return;
   }
 
@@ -519,24 +527,24 @@ async function requestBilling() {
   btn.disabled = true;
   btn.textContent = '처리중...';
 
-  try {
-    var tossPayments = TossPayments(CLIENT_KEY);
-    var customerKey = 'customer_' + Date.now();
-    var payment = tossPayments.payment({ customerKey: customerKey });
+  var customerKey = 'cust-' + Date.now() + '-' + Math.random().toString(36).substr(2,9);
+  var tossPayments = TossPayments(CLIENT_KEY);
 
-    await payment.requestBillingAuth({
-      method: 'CARD',
-      successUrl: window.location.origin + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1',
-      failUrl: window.location.origin + '?fail=1',
-      customerName: name,
-      customerEmail: email,
-    });
-  } catch(e) {
+  tossPayments.requestBillingAuth('카드', {
+    customerKey: customerKey,
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1',
+    failUrl: window.location.href.split('?')[0] + '?fail=1',
+    customerName: name,
+    customerEmail: email,
+    customerMobilePhone: phone.replace(/-/g, ''),
+  }).catch(function(e) {
     console.error(e);
-    alert('결제 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
+    if (e.code !== 'USER_CANCEL') {
+      alert('결제 요청 중 오류가 발생했습니다: ' + e.message);
+    }
     btn.disabled = false;
     btn.textContent = '카드 등록 & 구독 시작 →';
-  }
+  });
 }
 
 function openModal(type) {
@@ -564,12 +572,23 @@ function toggleFaq(btn) {
 function handleSubmit() {
   alert('구독 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
 }
-var observer = new IntersectionObserver(function(entries){
-  entries.forEach(function(e){
-    if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; }
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
   });
-}, {threshold:0.1});
-document.querySelectorAll('.plan-card,.feature-item,.step,.faq-item').forEach(function(el){ el.style.opacity='0'; el.style.transform='translateY(16px)'; el.style.transition='opacity 0.5s ease, transform 0.5s ease'; observer.observe(el); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(function(el) {
+  observer.observe(el);
+});
+// 이메일 동적 삽입 (Cloudflare 난독화 방지)
+(function() {
+  var e = 'readybody1' + '@' + 'naver.com';
+  document.querySelectorAll('.email-placeholder').forEach(function(el) {
+    el.textContent = e;
+    if (el.parentElement.tagName === 'A') el.parentElement.href = 'mailto:' + e;
+  });
+})();
 </script>
-</body>
 </html>
