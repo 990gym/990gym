@@ -530,7 +530,6 @@ async function requestBilling() {
       failUrl: window.location.origin + '?fail=1',
       customerName: name,
       customerEmail: email,
-      customerMobilePhone: phone.replace(/-/g, ''),
     });
   } catch(e) {
     console.error(e);
