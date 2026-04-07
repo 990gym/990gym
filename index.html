@@ -563,7 +563,7 @@ async function requestBilling() {
 
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeRIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
     failUrl: window.location.href.split('?')[0] + '?fail=1',
     customerName: name,
     customerEmail: email,
