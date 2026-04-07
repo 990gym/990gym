@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>990짐 관리자</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
     --navy: #1a2744;
-    --navy-light: #243257;
     --blue: #285FC7;
-    --white: #ffffff;
     --gray: #f5f6fa;
     --text: #222;
     --text-light: #666;
     --border: #e0e4ef;
     --green: #22c55e;
     --red: #ef4444;
-    --orange: #f59e0b;
   }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); }
@@ -34,6 +34,7 @@
   .header { background: var(--navy); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
   .header-logo { color: white; font-size: 18px; font-weight: 700; }
   .header-right { display: flex; align-items: center; gap: 16px; }
+  .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
   .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
@@ -90,6 +91,7 @@
   <div class="header">
     <div class="header-logo">990짐 관리자</div>
     <div class="header-right">
+      <span class="session-timer" id="session-timer"></span>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
@@ -145,26 +147,77 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const VERCEL_URL = 'https://project-ps3ps.vercel.app';
 const ADMIN_PW = '990gym2026!';
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30분
 
 let currentAction = null;
 let subscribers = [];
+let sessionTimer = null;
+let sessionInterval = null;
+let sessionExpiry = null;
 
 function doLogin() {
   const pw = document.getElementById('pw-input').value;
   if (pw === ADMIN_PW) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-screen').style.display = 'block';
-    loadSubscribers();
+    sessionStorage.setItem('admin_logged_in', '1');
+    sessionExpiry = Date.now() + SESSION_TIMEOUT;
+    sessionStorage.setItem('admin_expiry', sessionExpiry);
+    showAdmin();
   } else {
     document.getElementById('login-error').style.display = 'block';
   }
 }
 
-function doLogout() {
+function showAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'block';
+  loadSubscribers();
+  startSessionTimer();
+  document.addEventListener('mousemove', resetSessionTimer);
+  document.addEventListener('keydown', resetSessionTimer);
+  document.addEventListener('click', resetSessionTimer);
+}
+
+function startSessionTimer() {
+  if (sessionInterval) clearInterval(sessionInterval);
+  sessionInterval = setInterval(function() {
+    const remaining = sessionExpiry - Date.now();
+    if (remaining <= 0) {
+      doLogout(true);
+      return;
+    }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('session-timer').textContent = `${mins}:${secs.toString().padStart(2,'0')} 후 자동 로그아웃`;
+  }, 1000);
+}
+
+function resetSessionTimer() {
+  sessionExpiry = Date.now() + SESSION_TIMEOUT;
+  sessionStorage.setItem('admin_expiry', sessionExpiry);
+}
+
+function doLogout(auto) {
+  sessionStorage.removeItem('admin_logged_in');
+  sessionStorage.removeItem('admin_expiry');
+  if (sessionInterval) clearInterval(sessionInterval);
+  document.removeEventListener('mousemove', resetSessionTimer);
+  document.removeEventListener('keydown', resetSessionTimer);
+  document.removeEventListener('click', resetSessionTimer);
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-screen').style.display = 'none';
   document.getElementById('pw-input').value = '';
+  if (auto) alert('30분 동안 활동이 없어 자동 로그아웃되었습니다.');
 }
+
+// 새로고침해도 세션 유지
+window.addEventListener('load', function() {
+  const loggedIn = sessionStorage.getItem('admin_logged_in');
+  const expiry = parseInt(sessionStorage.getItem('admin_expiry'));
+  if (loggedIn && expiry && Date.now() < expiry) {
+    sessionExpiry = expiry;
+    showAdmin();
+  }
+});
 
 async function loadSubscribers() {
   document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
@@ -196,16 +249,17 @@ function renderTable() {
     document.getElementById('table-body').innerHTML = '<div class="empty">등록된 구독자가 없습니다.</div>';
     return;
   }
-  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>가입일</th><th>관리</th></tr></thead><tbody>`;
+  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>가입일</th><th>다음결제일</th><th>관리</th></tr></thead><tbody>`;
   subscribers.forEach(s => {
     const date = new Date(s.created_at).toLocaleDateString('ko-KR');
+    const nextBilling = s.next_billing_date ? new Date(s.next_billing_date).toLocaleDateString('ko-KR') : '-';
     const statusBadge = s.status === 'active'
       ? '<span class="badge badge-active">활성</span>'
       : '<span class="badge badge-cancelled">해지</span>';
     const actionBtn = s.status === 'active'
       ? `<button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
-    html += `<tr><td><strong>${s.name}</strong></td><td>${s.phone||'-'}</td><td>${s.email||'-'}</td><td>${s.plan}</td><td>${statusBadge}</td><td>${date}</td><td>${actionBtn}</td></tr>`;
+    html += `<tr><td><strong>${s.name}</strong></td><td>${s.phone||'-'}</td><td>${s.email||'-'}</td><td>${s.plan}</td><td>${statusBadge}</td><td>${date}</td><td>${nextBilling}</td><td>${actionBtn}</td></tr>`;
   });
   html += '</tbody></table>';
   document.getElementById('table-body').innerHTML = html;
@@ -222,7 +276,7 @@ function openCancelModal(id, name) {
 
 function openActivateModal(id, name) {
   document.getElementById('modal-title').textContent = '구독 복구';
-  document.getElementById('modal-desc').textContent = `${name}님의 구독을 다시 활성화하시겠습니까?`;
+  document.getElementById('modal-desc').textContent = `${name}님의 구독을 다시 활성화하시겠습니까? 즉시 결제가 진행됩니다.`;
   document.getElementById('modal-confirm-btn').className = 'modal-btn modal-btn-confirm green';
   document.getElementById('modal-confirm-btn').textContent = '복구';
   currentAction = { type: 'activate', id };
