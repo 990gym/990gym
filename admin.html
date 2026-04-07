@@ -21,204 +21,61 @@
     --orange: #f59e0b;
   }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
-
-  /* 로그인 */
-  #login-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--navy);
-  }
-  .login-box {
-    background: white;
-    border-radius: 16px;
-    padding: 48px 40px;
-    width: 360px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); }
+  .login-box { background: white; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
   .login-logo { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
   .login-sub { font-size: 13px; color: var(--text-light); margin-bottom: 32px; }
-  .login-box input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-size: 15px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s;
-  }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s; }
   .login-box input:focus { border-color: var(--blue); }
-  .login-btn {
-    width: 100%;
-    padding: 13px;
-    background: var(--navy);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 16px;
-    font-family: inherit;
-    transition: background 0.2s;
-  }
+  .login-btn { width: 100%; padding: 13px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: inherit; transition: background 0.2s; }
   .login-btn:hover { background: var(--blue); }
   .login-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
-
-  /* 메인 */
   #admin-screen { display: none; }
-  .header {
-    background: var(--navy);
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  .header { background: var(--navy); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
   .header-logo { color: white; font-size: 18px; font-weight: 700; }
   .header-right { display: flex; align-items: center; gap: 16px; }
-  .logout-btn {
-    background: rgba(255,255,255,0.1);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    font-family: inherit;
-  }
+  .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
-
   .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
-
-  /* 통계 카드 */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    border: 1px solid var(--border);
-  }
+  .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
   .stat-sub { font-size: 12px; color: var(--text-light); margin-top: 4px; }
-
-  /* 테이블 */
-  .table-wrap {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  .table-wrap { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+  .table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .table-title { font-size: 16px; font-weight: 600; }
-  .refresh-btn {
-    background: var(--gray);
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    font-family: inherit;
-    color: var(--text);
-  }
+  .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
   .refresh-btn:hover { background: var(--border); }
-
   table { width: 100%; border-collapse: collapse; }
-  th {
-    background: var(--gray);
-    padding: 12px 16px;
-    text-align: left;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
+  th { background: var(--gray); padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
   td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #fafbff; }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
-
-  .action-btn {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: inherit;
-    transition: opacity 0.2s;
-  }
+  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
-  .btn-refund { background: #fef3c7; color: #d97706; margin-left: 4px; }
-
   .loading { text-align: center; padding: 48px; color: var(--text-light); }
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
-
-  /* 모달 */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
   .modal-overlay.active { display: flex; }
-  .modal {
-    background: white;
-    border-radius: 16px;
-    padding: 32px;
-    width: 400px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  }
+  .modal { background: white; border-radius: 16px; padding: 32px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
   .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
   .modal-desc { font-size: 14px; color: var(--text-light); margin-bottom: 24px; }
   .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
-  .modal-btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-  }
+  .modal-btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; }
   .modal-btn-cancel { background: var(--gray); color: var(--text); }
   .modal-btn-confirm { background: var(--red); color: white; }
   .modal-btn-confirm.green { background: var(--green); }
-
-  @media (max-width: 768px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    .main { padding: 16px; }
-    table { font-size: 13px; }
-    th, td { padding: 10px 12px; }
-  }
+  @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .main { padding: 16px; } table { font-size: 13px; } th, td { padding: 10px 12px; } }
 </style>
 </head>
 <body>
 
-<!-- 로그인 -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">990짐 관리자</div>
@@ -229,7 +86,6 @@
   </div>
 </div>
 
-<!-- 관리자 메인 -->
 <div id="admin-screen">
   <div class="header">
     <div class="header-logo">990짐 관리자</div>
@@ -237,9 +93,7 @@
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
-
   <div class="main">
-    <!-- 통계 -->
     <div class="stats">
       <div class="stat-card">
         <div class="stat-label">전체 구독자</div>
@@ -262,8 +116,6 @@
         <div class="stat-sub">누적</div>
       </div>
     </div>
-
-    <!-- 테이블 -->
     <div class="table-wrap">
       <div class="table-header">
         <div class="table-title">구독 회원 목록</div>
@@ -276,7 +128,6 @@
   </div>
 </div>
 
-<!-- 확인 모달 -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal">
     <div class="modal-title" id="modal-title"></div>
@@ -291,8 +142,8 @@
 <script>
 const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
+const VERCEL_URL = 'https://project-ps3ps.vercel.app';
 const ADMIN_PW = '990gym2026!';
-
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
 
 let currentAction = null;
@@ -319,10 +170,7 @@ async function loadSubscribers() {
   document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=*&order=created_at.desc`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      }
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
     });
     subscribers = await res.json();
     renderTable();
@@ -337,7 +185,6 @@ function renderStats() {
   const active = subscribers.filter(s => s.status === 'active').length;
   const cancelled = subscribers.filter(s => s.status === 'cancelled').length;
   const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
-
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-cancelled').textContent = cancelled;
@@ -349,11 +196,7 @@ function renderTable() {
     document.getElementById('table-body').innerHTML = '<div class="empty">등록된 구독자가 없습니다.</div>';
     return;
   }
-  let html = `<table>
-    <thead><tr>
-      <th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>가입일</th><th>관리</th>
-    </tr></thead><tbody>`;
-
+  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>가입일</th><th>관리</th></tr></thead><tbody>`;
   subscribers.forEach(s => {
     const date = new Date(s.created_at).toLocaleDateString('ko-KR');
     const statusBadge = s.status === 'active'
@@ -362,18 +205,8 @@ function renderTable() {
     const actionBtn = s.status === 'active'
       ? `<button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
-
-    html += `<tr>
-      <td><strong>${s.name}</strong></td>
-      <td>${s.phone || '-'}</td>
-      <td>${s.email || '-'}</td>
-      <td>${s.plan}</td>
-      <td>${statusBadge}</td>
-      <td>${date}</td>
-      <td>${actionBtn}</td>
-    </tr>`;
+    html += `<tr><td><strong>${s.name}</strong></td><td>${s.phone||'-'}</td><td>${s.email||'-'}</td><td>${s.plan}</td><td>${statusBadge}</td><td>${date}</td><td>${actionBtn}</td></tr>`;
   });
-
   html += '</tbody></table>';
   document.getElementById('table-body').innerHTML = html;
 }
@@ -405,22 +238,28 @@ async function confirmAction() {
   if (!currentAction) return;
   const { type, id } = currentAction;
   const newStatus = type === 'cancel' ? 'cancelled' : 'active';
-
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ status: newStatus }),
+    const res = await fetch(`${VERCEL_URL}/api/cancel-subscriber`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: newStatus })
     });
-    closeModal();
-    loadSubscribers();
+    const data = await res.json();
+    if (data.success) {
+      closeModal();
+      loadSubscribers();
+    } else {
+      alert('오류: ' + (data.error || '다시 시도해주세요'));
+      btn.disabled = false;
+      btn.textContent = '확인';
+    }
   } catch(e) {
     alert('오류가 발생했습니다. 다시 시도해주세요.');
+    btn.disabled = false;
+    btn.textContent = '확인';
   }
 }
 </script>
