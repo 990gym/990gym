@@ -499,12 +499,14 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
     var customerKey = params.get('customerKey');
     var plan = params.get('plan');
     var name = params.get('name');
+    var phone = params.get('phone');
+    var email = params.get('email');
     
     if (authKey && customerKey) {
       fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name })
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
       })
       .then(function(res) { return res.json(); })
       .then(function(data) {
@@ -561,7 +563,7 @@ async function requestBilling() {
 
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeRIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
     failUrl: window.location.href.split('?')[0] + '?fail=1',
     customerName: name,
     customerEmail: email,
