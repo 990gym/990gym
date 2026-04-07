@@ -491,6 +491,35 @@
 <script>
 // 토스페이먼츠 빌링 연동
 var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
+  // 빌링 인증 완료 처리
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('success') === '1') {
+    var authKey = params.get('authKey');
+    var customerKey = params.get('customerKey');
+    var plan = params.get('plan');
+    var name = params.get('name');
+    
+    if (authKey && customerKey) {
+      fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.success) {
+          alert('구독이 완료되었습니다! 환영합니다 🎉');
+        } else {
+          alert('오류가 발생했습니다: ' + (data.message || '다시 시도해주세요'));
+        }
+      })
+      .catch(function(e) {
+        alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
+      });
+    }
+  }
+})();
 var selectedPlan = { name: '', price: 0 };
 
 function openPayModal(planName, price) {
@@ -532,7 +561,7 @@ async function requestBilling() {
 
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1',
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&success=1' + '&customerKey=' + encodURIComponent(customerKey) ,
     failUrl: window.location.href.split('?')[0] + '?fail=1',
     customerName: name,
     customerEmail: email,
