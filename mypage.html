@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>990짐 마이페이지</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy: #1a2744;
+    --blue: #285FC7;
+    --gray: #f5f6fa;
+    --text: #222;
+    --text-light: #666;
+    --border: #e0e4ef;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+
+  .header { background: var(--navy); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  .header-logo { color: white; font-size: 18px; font-weight: 700; }
+  .header-sub { color: rgba(255,255,255,0.6); font-size: 13px; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 32px 20px; }
+
+  /* 로그인 카드 */
+  .card { background: white; border-radius: 16px; padding: 32px; border: 1px solid var(--border); margin-bottom: 16px; }
+  .card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .card-sub { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--blue); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+  .submit-btn:hover { background: var(--blue); }
+  .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; display: none; text-align: center; }
+
+  /* 구독 정보 */
+  #mypage-screen { display: none; }
+
+  .profile-card { background: var(--navy); border-radius: 16px; padding: 28px; color: white; margin-bottom: 16px; }
+  .profile-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .profile-plan { font-size: 14px; color: rgba(255,255,255,0.7); }
+
+  .info-card { background: white; border-radius: 16px; padding: 24px; border: 1px solid var(--border); margin-bottom: 16px; }
+  .info-title { font-size: 14px; font-weight: 600; color: var(--text-light); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-label { font-size: 14px; color: var(--text-light); }
+  .info-value { font-size: 14px; font-weight: 600; }
+
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-active { background: #dcfce7; color: #16a34a; }
+  .badge-cancelled { background: #fee2e2; color: #dc2626; }
+
+  .amount { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .amount-sub { font-size: 13px; color: var(--text-light); }
+
+  .notice-card { background: #f0f4ff; border-radius: 12px; padding: 16px; font-size: 13px; color: #4a6fa5; line-height: 1.6; margin-bottom: 16px; }
+
+  .logout-btn { width: 100%; padding: 12px; background: white; color: var(--text-light); border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .logout-btn:hover { background: var(--gray); }
+
+  .loading { text-align: center; padding: 48px; color: var(--text-light); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">990짐</div>
+    <div class="header-sub">마이페이지</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 로그인 -->
+  <div id="login-screen">
+    <div class="card">
+      <div class="card-title">구독 정보 확인</div>
+      <div class="card-sub">가입 시 등록한 이름과 휴대폰 번호를 입력해주세요.</div>
+      <div class="form-group">
+        <label class="form-label">이름</label>
+        <input type="text" class="form-input" id="input-name" placeholder="홍길동">
+      </div>
+      <div class="form-group">
+        <label class="form-label">휴대폰 번호</label>
+        <input type="tel" class="form-input" id="input-phone" placeholder="010-0000-0000" oninput="formatPhone(this)">
+      </div>
+      <button class="submit-btn" onclick="doSearch()" id="search-btn">확인하기</button>
+      <div class="error-msg" id="error-msg">입력하신 정보로 구독 내역을 찾을 수 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- 마이페이지 -->
+  <div id="mypage-screen">
+    <div class="profile-card">
+      <div class="profile-name" id="my-name"></div>
+      <div class="profile-plan" id="my-plan"></div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-title">구독 현황</div>
+      <div class="info-row">
+        <span class="info-label">상태</span>
+        <span id="my-status"></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">구독 플랜</span>
+        <span class="info-value" id="my-plan-name"></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">월 결제금액</span>
+        <div>
+          <div class="amount" id="my-amount"></div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-label">구독 시작일</span>
+        <span class="info-value" id="my-start"></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">다음 결제일</span>
+        <span class="info-value" id="my-next"></span>
+      </div>
+    </div>
+
+    <div class="notice-card">
+      구독 해지 또는 플랜 변경은 카카오톡 채널 또는 전화(02-371-2684)로 문의해주세요.
+    </div>
+
+    <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
+const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
+
+function formatPhone(input) {
+  let val = input.value.replace(/\D/g, '');
+  if (val.length <= 3) input.value = val;
+  else if (val.length <= 7) input.value = val.slice(0,3) + '-' + val.slice(3);
+  else input.value = val.slice(0,3) + '-' + val.slice(3,7) + '-' + val.slice(7,11);
+}
+
+async function doSearch() {
+  const name = document.getElementById('input-name').value.trim();
+  const phone = document.getElementById('input-phone').value.trim();
+  const btn = document.getElementById('search-btn');
+  const errMsg = document.getElementById('error-msg');
+
+  if (!name || !phone) { errMsg.style.display = 'block'; errMsg.textContent = '이름과 휴대폰 번호를 모두 입력해주세요.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  errMsg.style.display = 'none';
+
+  try {
+    const phoneClean = phone.replace(/-/g, '');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?name=eq.${encodeURIComponent(name)}&phone=eq.${phoneClean}&select=*`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      errMsg.style.display = 'block';
+      errMsg.textContent = '입력하신 정보로 구독 내역을 찾을 수 없습니다.';
+      btn.disabled = false;
+      btn.textContent = '확인하기';
+      return;
+    }
+
+    const sub = data[0];
+    showMypage(sub);
+  } catch(e) {
+    errMsg.style.display = 'block';
+    errMsg.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    btn.disabled = false;
+    btn.textContent = '확인하기';
+  }
+}
+
+function showMypage(sub) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('mypage-screen').style.display = 'block';
+
+  document.getElementById('my-name').textContent = sub.name + '님';
+  document.getElementById('my-plan').textContent = sub.plan + ' 구독 중';
+  document.getElementById('my-plan-name').textContent = sub.plan;
+
+  const statusEl = document.getElementById('my-status');
+  if (sub.status === 'active') {
+    statusEl.innerHTML = '<span class="badge badge-active">구독 중</span>';
+    document.getElementById('my-next').textContent = sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString('ko-KR') : '-';
+  } else {
+    statusEl.innerHTML = '<span class="badge badge-cancelled">해지됨</span>';
+    document.getElementById('my-next').textContent = '-';
+  }
+
+  const amount = PLAN_PRICES[sub.plan] || 0;
+  document.getElementById('my-amount').textContent = amount.toLocaleString() + '원';
+  document.getElementById('my-start').textContent = new Date(sub.created_at).toLocaleDateString('ko-KR');
+}
+
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('mypage-screen').style.display = 'none';
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-phone').value = '';
+  document.getElementById('search-btn').disabled = false;
+  document.getElementById('search-btn').textContent = '확인하기';
+}
+</script>
+</body>
+</html>
