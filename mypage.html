@@ -217,7 +217,7 @@ function showMypage(sub) {
   document.getElementById('mypage-screen').style.display = 'block';
 
   document.getElementById('my-name').textContent = sub.name + '님';
-  document.getElementById('my-plan').textContent = sub.plan + ' 구독 중';
+  document.getElementById('my-plan').textContent = sub.status === 'active' ? sub.plan + ' 구독 중' : sub.plan + ' (해지됨)';
   document.getElementById('my-plan-name').textContent = sub.plan;
 
   const statusEl = document.getElementById('my-status');
