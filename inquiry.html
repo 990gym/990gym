@@ -214,7 +214,7 @@ async function loadInquiries() {
         ? '<span class="badge badge-active">연락완료</span>'
         : '<span class="badge badge-new">미처리</span>';
       const actionBtn = i.contacted
-        ? `<button class="action-btn btn-undo" onclick="toggleContacted('${i.id}', false)">미처리로</button>`
+        ? `<button class="action-btn btn-undo" onclick="toggleContacted('${i.id}', false)">미처리</button>`
         : `<button class="action-btn btn-done" onclick="toggleContacted('${i.id}', true)">연락완료</button>`;
       html += `<tr><td><strong>${i.name}</strong></td><td>${i.phone}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
     });
