@@ -352,9 +352,10 @@ function closePlanModal() {
 }
 
 async function confirmPlanChange() {
-  if (!currentPlanAction) return;
+  const action = currentPlanAction;
+  if (!action) return;
   const newPlan = document.getElementById('plan-select').value;
-  if (newPlan === currentPlanAction.currentPlan) {
+  if (newPlan === action.currentPlan) {
     alert('현재 플랜과 동일합니다.');
     return;
   }
@@ -362,7 +363,7 @@ async function confirmPlanChange() {
   btn.disabled = true;
   btn.textContent = '처리중...';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${currentPlanAction.id}`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${action.id}`, {
       method: 'PATCH',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
@@ -372,16 +373,17 @@ async function confirmPlanChange() {
       },
       body: JSON.stringify({ plan: newPlan }),
     });
-  if (res.ok || res.status === 204) {
-      closePlanModal();
+    const actionName = action.name;
+    closePlanModal();
+    if (res.ok || res.status === 204) {
       loadSubscribers();
-      alert(`${currentPlanAction.name}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
+      alert(`${actionName}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
     } else {
       alert('플랜 변경에 실패했습니다.');
       btn.disabled = false;
       btn.textContent = '변경';
     }
-} catch(e) {
+  } catch(e) {
     alert('오류: ' + e.message);
     btn.disabled = false;
     btn.textContent = '변경';
