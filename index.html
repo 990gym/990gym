@@ -338,26 +338,16 @@
 </section>
 
 <section class="signup-section" id="signup">
-  <div class="section-label">구독 신청</div>
-  <h2 class="section-title">지금 바로 시작하세요</h2>
-  <p class="section-desc">간단한 정보를 입력하시면 담당자가 확인 후 연락드립니다.</p>
+  <div class="section-label">상담 신청</div>
+  <h2 class="section-title">궁금하신가요? 연락드릴게요</h2>
+  <p class="section-desc">이름과 연락처를 남겨주시면 담당자가 직접 연락드립니다.</p>
   <div class="signup-form">
     <div class="form-row">
-      <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" placeholder="성함"></div>
-      <div class="form-group"><label class="form-label">연락처</label><input type="tel" class="form-input" placeholder="010-0000-0000"></div>
+      <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="inquiry-name" placeholder="성함"></div>
+      <div class="form-group"><label class="form-label">연락처</label><input type="tel" class="form-input" id="inquiry-phone" placeholder="010-0000-0000"></div>
     </div>
-    <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" placeholder="example@email.com"></div>
-    <div class="form-group">
-      <label class="form-label">구독 플랜</label>
-      <select class="form-select">
-        <option value="">플랜을 선택하세요</option>
-        <option>베이직 (39,000원/월)</option>
-        <option>스탠다드 (69,000원/월)</option>
-        <option>프리미엄 (99,000원/월)</option>
-      </select>
-    </div>
-    <button class="form-submit" onclick="handleSubmit()">구독 신청하기 →</button>
-    <p class="form-note">개인정보는 구독 서비스 제공 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.</p>
+    <button class="form-submit" onclick="handleSubmit()">상담 신청하기 →</button>
+    <p class="form-note">개인정보는 상담 목적으로만 사용되며, 관련 법령에 따라 안전하게 보호됩니다.</p>
   </div>
 </section>
 
@@ -600,8 +590,28 @@ function toggleFaq(btn) {
   document.querySelectorAll('.faq-item').forEach(function(i){ i.classList.remove('open'); });
   if (!isOpen) item.classList.add('open');
 }
-function handleSubmit() {
-  alert('구독 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
+async function handleSubmit() {
+  var name = document.getElementById('inquiry-name').value.trim();
+  var phone = document.getElementById('inquiry-phone').value.trim();
+  if (!name) { alert('이름을 입력해주세요.'); return; }
+  if (!phone) { alert('연락처를 입력해주세요.'); return; }
+  try {
+    await fetch('https://twwpxtveupsqwenkprdw.supabase.co/rest/v1/inquiries', {
+      method: 'POST',
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ name: name, phone: phone })
+    });
+    alert('상담 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
+    document.getElementById('inquiry-name').value = '';
+    document.getElementById('inquiry-phone').value = '';
+  } catch(e) {
+    alert('오류가 발생했습니다. 다시 시도해주세요.');
+  }
 }
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(entry) {
