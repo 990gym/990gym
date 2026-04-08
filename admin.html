@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -41,7 +40,7 @@
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
   .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
@@ -117,6 +116,11 @@
         <div class="stat-sub">현재</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">해지 회원</div>
+        <div class="stat-value" id="stat-cancelled" style="color:var(--red)">-</div>
+        <div class="stat-sub">누적</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">이번달 예상 매출</div>
         <div class="stat-value" id="stat-revenue">-</div>
         <div class="stat-sub">원</div>
@@ -128,28 +132,25 @@
       </div>
     </div>
 
-<!-- 상담 신청 목록 -->
-<div class="table-wrap">
-  <div class="table-header">
-    <div class="table-title">📋 상담 신청 목록</div>
-    <button class="refresh-btn" onclick="loadInquiries()">🔄 새로고침</button>
-  </div>
-  <div id="inquiry-body">
-    <div class="loading">불러오는 중...</div>
-  </div>
-</div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">📋 상담 신청 목록</div>
+        <button class="refresh-btn" onclick="loadInquiries()">🔄 새로고침</button>
+      </div>
+      <div id="inquiry-body">
+        <div class="loading">불러오는 중...</div>
+      </div>
+    </div>
 
-<!-- 구독 회원 목록 -->
-<div class="table-wrap">
-  <div class="table-header">
-    <div class="table-title">구독 회원 목록</div>
-    <button class="refresh-btn" onclick="loadSubscribers()">🔄 새로고침</button>
-  </div>
-  <div id="table-body">
-    <div class="loading">불러오는 중...</div>
-  </div>
-</div>
-
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">구독 회원 목록</div>
+        <button class="refresh-btn" onclick="loadSubscribers()">🔄 새로고침</button>
+      </div>
+      <div id="table-body">
+        <div class="loading">불러오는 중...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -264,7 +265,6 @@ async function loadInquiries() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const inquiries = await res.json();
-    if (!Array.isArray(inquiries)) throw new Error('데이터 형식 오류');
     const pending = inquiries.filter(i => !i.contacted).length;
     document.getElementById('stat-inquiries').textContent = pending;
     if (!inquiries.length) {
@@ -285,8 +285,7 @@ async function loadInquiries() {
     html += '</tbody></table>';
     document.getElementById('inquiry-body').innerHTML = html;
   } catch(e) {
-    console.error('inquiries 로드 실패:', e);
-    document.getElementById('inquiry-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다. (${e.message})</div>`;
+    document.getElementById('inquiry-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
   }
 }
 
@@ -316,23 +315,21 @@ async function loadSubscribers() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     subscribers = await res.json();
-    if (!Array.isArray(subscribers)) throw new Error('데이터 형식 오류');
     renderTable();
     renderStats();
   } catch(e) {
-    console.error('subscribers 로드 실패:', e);
-    document.getElementById('table-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다. (${e.message})</div>`;
+    document.getElementById('table-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
   }
 }
 
-// ✅ 수정: stat-cancelled element가 HTML에 없으므로 제거
 function renderStats() {
   const total = subscribers.length;
   const active = subscribers.filter(s => s.status === 'active').length;
-  const revenue = subscribers.filter(s => s.status === 'active')
-    .reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
+  const cancelled = subscribers.filter(s => s.status === 'cancelled').length;
+  const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-cancelled').textContent = cancelled;
   document.getElementById('stat-revenue').textContent = revenue.toLocaleString();
 }
 
@@ -353,10 +350,10 @@ function renderTable() {
          <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
     html += `<tr>
-      <td><strong>${s.name || '-'}</strong></td>
-      <td>${s.phone || '-'}</td>
-      <td>${s.email || '-'}</td>
-      <td>${s.plan || '-'}</td>
+      <td><strong>${s.name||'-'}</strong></td>
+      <td>${s.phone||'-'}</td>
+      <td>${s.email||'-'}</td>
+      <td>${s.plan||'-'}</td>
       <td>${statusBadge}</td>
       <td>${date}</td>
       <td>${nextBilling}</td>
@@ -470,6 +467,5 @@ async function confirmPlanChange() {
   }
 }
 </script>
-
 </body>
 </html>
