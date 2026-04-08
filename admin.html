@@ -372,7 +372,7 @@ async function confirmPlanChange() {
       },
       body: JSON.stringify({ plan: newPlan }),
     });
-    if (res.ok) {
+  if (res.ok || res.status === 204) {
       closePlanModal();
       loadSubscribers();
       alert(`${currentPlanAction.name}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
