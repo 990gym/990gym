@@ -381,8 +381,8 @@ async function confirmPlanChange() {
       btn.disabled = false;
       btn.textContent = '변경';
     }
-  } catch(e) {
-    alert('오류가 발생했습니다.');
+} catch(e) {
+    alert('오류: ' + e.message);
     btn.disabled = false;
     btn.textContent = '변경';
   }
