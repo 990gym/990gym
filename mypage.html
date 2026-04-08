@@ -213,6 +213,7 @@ async function doSearch() {
 }
 
 function showMypage(sub) {
+  sessionStorage.setItem('mypage_sub', JSON.stringify(sub));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('mypage-screen').style.display = 'block';
 
@@ -235,6 +236,7 @@ function showMypage(sub) {
 }
 
 function doLogout() {
+  sessionStorage.removeItem('mypage_sub');
   document.getElementById('login-screen').style.display = 'block';
   document.getElementById('mypage-screen').style.display = 'none';
   document.getElementById('input-name').value = '';
@@ -242,6 +244,13 @@ function doLogout() {
   document.getElementById('search-btn').disabled = false;
   document.getElementById('search-btn').textContent = '확인하기';
 }
+
+window.addEventListener('load', function() {
+  const saved = sessionStorage.getItem('mypage_sub');
+  if (saved) {
+    try { showMypage(JSON.parse(saved)); } catch(e) {}
+  }
+});
 </script>
 </body>
 </html>
