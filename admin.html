@@ -35,12 +35,16 @@
   #admin-screen { display: none; }
   .header { background: var(--navy); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
   .header-logo { color: white; font-size: 18px; font-weight: 700; }
-  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-link { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; text-decoration: none; display: inline-block; }
+  .header-link:hover { background: rgba(255,255,255,0.2); }
+  .header-link.highlight { background: var(--purple); }
+  .header-link.highlight:hover { background: #7c3aed; }
   .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
   .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
-  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
@@ -58,13 +62,11 @@
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
-  .badge-new { background: #ede9fe; color: #7c3aed; }
   .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
   .btn-plan { background: #fef3c7; color: #d97706; }
-  .btn-done { background: #ede9fe; color: #7c3aed; }
   .loading { text-align: center; padding: 48px; color: var(--text-light); }
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
@@ -100,6 +102,7 @@
     <div class="header-logo">990짐 관리자</div>
     <div class="header-right">
       <span class="session-timer" id="session-timer"></span>
+      <a href="inquiry.html" class="header-link highlight">📋 상담 신청 <span id="inquiry-count"></span></a>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
@@ -124,21 +127,6 @@
         <div class="stat-label">이번달 예상 매출</div>
         <div class="stat-value" id="stat-revenue">-</div>
         <div class="stat-sub">원</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">상담 신청</div>
-        <div class="stat-value" id="stat-inquiries" style="color:var(--purple)">-</div>
-        <div class="stat-sub">미처리</div>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <div class="table-header">
-        <div class="table-title">📋 상담 신청 목록</div>
-        <button class="refresh-btn" onclick="loadInquiries()">🔄 새로고침</button>
-      </div>
-      <div id="inquiry-body">
-        <div class="loading">불러오는 중...</div>
       </div>
     </div>
 
@@ -212,7 +200,7 @@ function showAdmin() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-screen').style.display = 'block';
   loadSubscribers();
-  loadInquiries();
+  loadInquiryCount();
   startSessionTimer();
   document.addEventListener('mousemove', resetSessionTimer);
   document.addEventListener('keydown', resetSessionTimer);
@@ -257,54 +245,15 @@ window.addEventListener('load', function() {
   }
 });
 
-async function loadInquiries() {
-  document.getElementById('inquiry-body').innerHTML = '<div class="loading">불러오는 중...</div>';
+async function loadInquiryCount() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=*&order=created_at.desc`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=id,contacted&contacted=eq.false`, {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const inquiries = await res.json();
-    const pending = inquiries.filter(i => !i.contacted).length;
-    document.getElementById('stat-inquiries').textContent = pending;
-    if (!inquiries.length) {
-      document.getElementById('inquiry-body').innerHTML = '<div class="empty">상담 신청이 없습니다.</div>';
-      return;
-    }
-    let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>신청일시</th><th>상태</th><th>관리</th></tr></thead><tbody>`;
-    inquiries.forEach(i => {
-      const date = new Date(i.created_at).toLocaleString('ko-KR');
-      const statusBadge = i.contacted
-        ? '<span class="badge badge-active">연락완료</span>'
-        : '<span class="badge badge-new">미처리</span>';
-      const actionBtn = !i.contacted
-        ? `<button class="action-btn btn-done" onclick="markContacted('${i.id}')">연락완료</button>`
-        : '';
-      html += `<tr><td><strong>${i.name}</strong></td><td>${i.phone}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('inquiry-body').innerHTML = html;
-  } catch(e) {
-    document.getElementById('inquiry-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
-  }
-}
-
-async function markContacted(id) {
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/inquiries?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ contacted: true }),
-    });
-    loadInquiries();
-  } catch(e) {
-    alert('오류가 발생했습니다.');
-  }
+    const data = await res.json();
+    const count = Array.isArray(data) ? data.length : 0;
+    document.getElementById('inquiry-count').textContent = count > 0 ? `(${count})` : '';
+  } catch(e) {}
 }
 
 async function loadSubscribers() {
