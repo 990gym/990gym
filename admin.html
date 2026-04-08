@@ -19,6 +19,7 @@
     --border: #e0e4ef;
     --green: #22c55e;
     --red: #ef4444;
+    --orange: #f59e0b;
   }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); }
@@ -56,10 +57,11 @@
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
-  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; }
+  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
+  .btn-plan { background: #fef3c7; color: #d97706; }
   .loading { text-align: center; padding: 48px; color: var(--text-light); }
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
@@ -72,6 +74,9 @@
   .modal-btn-cancel { background: var(--gray); color: var(--text); }
   .modal-btn-confirm { background: var(--red); color: white; }
   .modal-btn-confirm.green { background: var(--green); }
+  .modal-btn-confirm.orange { background: var(--orange); color: white; }
+  .plan-select { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; margin-top: 8px; }
+  .plan-select:focus { border-color: var(--blue); }
   @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .main { padding: 16px; } table { font-size: 13px; } th, td { padding: 10px 12px; } }
 </style>
 </head>
@@ -130,6 +135,7 @@
   </div>
 </div>
 
+<!-- 해지/복구 모달 -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal">
     <div class="modal-title" id="modal-title"></div>
@@ -141,17 +147,35 @@
   </div>
 </div>
 
+<!-- 플랜 변경 모달 -->
+<div class="modal-overlay" id="plan-modal">
+  <div class="modal">
+    <div class="modal-title">플랜 변경</div>
+    <div class="modal-desc" id="plan-modal-desc"></div>
+    <select class="plan-select" id="plan-select">
+      <option value="베이직">베이직 (39,000원/월)</option>
+      <option value="스탠다드">스탠다드 (69,000원/월)</option>
+      <option value="프리미엄">프리미엄 (99,000원/월)</option>
+    </select>
+    <div style="font-size:12px;color:var(--text-light);margin-top:8px;">다음 결제일부터 변경된 플랜 금액으로 청구됩니다.</div>
+    <div class="modal-btns" style="margin-top:24px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closePlanModal()">취소</button>
+      <button class="modal-btn modal-btn-confirm orange" id="plan-confirm-btn" onclick="confirmPlanChange()">변경</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
 const VERCEL_URL = 'https://project-ps3ps.vercel.app';
 const ADMIN_PW = '990gym2026!';
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30분
+const SESSION_TIMEOUT = 30 * 60 * 1000;
 
 let currentAction = null;
+let currentPlanAction = null;
 let subscribers = [];
-let sessionTimer = null;
 let sessionInterval = null;
 let sessionExpiry = null;
 
@@ -181,10 +205,7 @@ function startSessionTimer() {
   if (sessionInterval) clearInterval(sessionInterval);
   sessionInterval = setInterval(function() {
     const remaining = sessionExpiry - Date.now();
-    if (remaining <= 0) {
-      doLogout(true);
-      return;
-    }
+    if (remaining <= 0) { doLogout(true); return; }
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
     document.getElementById('session-timer').textContent = `${mins}:${secs.toString().padStart(2,'0')} 후 자동 로그아웃`;
@@ -209,7 +230,6 @@ function doLogout(auto) {
   if (auto) alert('30분 동안 활동이 없어 자동 로그아웃되었습니다.');
 }
 
-// 새로고침해도 세션 유지
 window.addEventListener('load', function() {
   const loggedIn = sessionStorage.getItem('admin_logged_in');
   const expiry = parseInt(sessionStorage.getItem('admin_expiry'));
@@ -256,10 +276,11 @@ function renderTable() {
     const statusBadge = s.status === 'active'
       ? '<span class="badge badge-active">활성</span>'
       : '<span class="badge badge-cancelled">해지</span>';
-    const actionBtn = s.status === 'active'
-      ? `<button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
+    const actionBtns = s.status === 'active'
+      ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
+         <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
-    html += `<tr><td><strong>${s.name}</strong></td><td>${s.phone||'-'}</td><td>${s.email||'-'}</td><td>${s.plan}</td><td>${statusBadge}</td><td>${date}</td><td>${nextBilling}</td><td>${actionBtn}</td></tr>`;
+    html += `<tr><td><strong>${s.name}</strong></td><td>${s.phone||'-'}</td><td>${s.email||'-'}</td><td>${s.plan}</td><td>${statusBadge}</td><td>${date}</td><td>${nextBilling}</td><td>${actionBtns}</td></tr>`;
   });
   html += '</tbody></table>';
   document.getElementById('table-body').innerHTML = html;
@@ -314,6 +335,56 @@ async function confirmAction() {
     alert('오류가 발생했습니다. 다시 시도해주세요.');
     btn.disabled = false;
     btn.textContent = '확인';
+  }
+}
+
+// 플랜 변경
+function openPlanModal(id, name, currentPlan) {
+  document.getElementById('plan-modal-desc').textContent = `${name}님의 플랜을 변경합니다. (현재: ${currentPlan})`;
+  document.getElementById('plan-select').value = currentPlan;
+  currentPlanAction = { id, name, currentPlan };
+  document.getElementById('plan-modal').classList.add('active');
+}
+
+function closePlanModal() {
+  document.getElementById('plan-modal').classList.remove('active');
+  currentPlanAction = null;
+}
+
+async function confirmPlanChange() {
+  if (!currentPlanAction) return;
+  const newPlan = document.getElementById('plan-select').value;
+  if (newPlan === currentPlanAction.currentPlan) {
+    alert('현재 플랜과 동일합니다.');
+    return;
+  }
+  const btn = document.getElementById('plan-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${currentPlanAction.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ plan: newPlan }),
+    });
+    if (res.ok) {
+      closePlanModal();
+      loadSubscribers();
+      alert(`${currentPlanAction.name}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
+    } else {
+      alert('플랜 변경에 실패했습니다.');
+      btn.disabled = false;
+      btn.textContent = '변경';
+    }
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+    btn.disabled = false;
+    btn.textContent = '변경';
   }
 }
 </script>
