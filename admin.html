@@ -20,6 +20,7 @@
     --green: #22c55e;
     --red: #ef4444;
     --orange: #f59e0b;
+    --purple: #8b5cf6;
   }
   body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
   #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); }
@@ -44,7 +45,7 @@
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
   .stat-sub { font-size: 12px; color: var(--text-light); margin-top: 4px; }
-  .table-wrap { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+  .table-wrap { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
   .table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .table-title { font-size: 16px; font-weight: 600; }
   .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
@@ -57,11 +58,13 @@
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
+  .badge-new { background: #ede9fe; color: #7c3aed; }
   .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
   .btn-plan { background: #fef3c7; color: #d97706; }
+  .btn-done { background: #ede9fe; color: #7c3aed; }
   .loading { text-align: center; padding: 48px; color: var(--text-light); }
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
@@ -118,11 +121,24 @@
         <div class="stat-sub">원</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">해지 회원</div>
-        <div class="stat-value" id="stat-cancelled" style="color:var(--red)">-</div>
-        <div class="stat-sub">누적</div>
+        <div class="stat-label">상담 신청</div>
+        <div class="stat-value" id="stat-inquiries" style="color:var(--purple)">-</div>
+        <div class="stat-sub">미처리</div>
       </div>
     </div>
+
+    <!-- 상담 신청 목록 -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">📋 상담 신청 목록</div>
+        <button class="refresh-btn" onclick="loadInquiries()">🔄 새로고침</button>
+      </div>
+      <div id="inquiry-body">
+        <div class="loading">불러오는 중...</div>
+      </div>
+    </div>
+
+    <!-- 구독 회원 목록 -->
     <div class="table-wrap">
       <div class="table-header">
         <div class="table-title">구독 회원 목록</div>
@@ -193,6 +209,7 @@ function showAdmin() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-screen').style.display = 'block';
   loadSubscribers();
+  loadInquiries();
   startSessionTimer();
   document.addEventListener('mousemove', resetSessionTimer);
   document.addEventListener('keydown', resetSessionTimer);
@@ -236,6 +253,55 @@ window.addEventListener('load', function() {
     showAdmin();
   }
 });
+
+async function loadInquiries() {
+  document.getElementById('inquiry-body').innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=*&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    const inquiries = await res.json();
+    const pending = inquiries.filter(i => !i.contacted).length;
+    document.getElementById('stat-inquiries').textContent = pending;
+    if (!inquiries.length) {
+      document.getElementById('inquiry-body').innerHTML = '<div class="empty">상담 신청이 없습니다.</div>';
+      return;
+    }
+    let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>신청일시</th><th>상태</th><th>관리</th></tr></thead><tbody>`;
+    inquiries.forEach(i => {
+      const date = new Date(i.created_at).toLocaleString('ko-KR');
+      const statusBadge = i.contacted
+        ? '<span class="badge badge-active">연락완료</span>'
+        : '<span class="badge badge-new">미처리</span>';
+      const actionBtn = !i.contacted
+        ? `<button class="action-btn btn-done" onclick="markContacted('${i.id}')">연락완료</button>`
+        : '';
+      html += `<tr><td><strong>${i.name}</strong></td><td>${i.phone}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('inquiry-body').innerHTML = html;
+  } catch(e) {
+    document.getElementById('inquiry-body').innerHTML = '<div class="empty">데이터를 불러오지 못했습니다.</div>';
+  }
+}
+
+async function markContacted(id) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/inquiries?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ contacted: true }),
+    });
+    loadInquiries();
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+  }
+}
 
 async function loadSubscribers() {
   document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
