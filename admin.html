@@ -135,7 +135,6 @@
   </div>
 </div>
 
-<!-- 해지/복구 모달 -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal">
     <div class="modal-title" id="modal-title"></div>
@@ -147,7 +146,6 @@
   </div>
 </div>
 
-<!-- 플랜 변경 모달 -->
 <div class="modal-overlay" id="plan-modal">
   <div class="modal">
     <div class="modal-title">플랜 변경</div>
@@ -338,7 +336,6 @@ async function confirmAction() {
   }
 }
 
-// 플랜 변경
 function openPlanModal(id, name, currentPlan) {
   document.getElementById('plan-modal-desc').textContent = `${name}님의 플랜을 변경합니다. (현재: ${currentPlan})`;
   document.getElementById('plan-select').value = currentPlan;
@@ -348,6 +345,8 @@ function openPlanModal(id, name, currentPlan) {
 
 function closePlanModal() {
   document.getElementById('plan-modal').classList.remove('active');
+  document.getElementById('plan-confirm-btn').disabled = false;
+  document.getElementById('plan-confirm-btn').textContent = '변경';
   currentPlanAction = null;
 }
 
@@ -381,13 +380,10 @@ async function confirmPlanChange() {
       alert(`${actionName}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
     } else {
       alert('플랜 변경에 실패했습니다.');
-      btn.disabled = false;
-      btn.textContent = '변경';
     }
   } catch(e) {
     alert('오류: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '변경';
+    closePlanModal();
   }
 }
 </script>
