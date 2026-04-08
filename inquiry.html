@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>990짐 상담 신청 관리</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy: #1a2744;
+    --blue: #285FC7;
+    --gray: #f5f6fa;
+    --text: #222;
+    --text-light: #666;
+    --border: #e0e4ef;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); }
+  .login-box { background: white; border-radius: 16px; padding: 48px 40px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .login-logo { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .login-sub { font-size: 13px; color: var(--text-light); margin-bottom: 32px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+  .login-box input:focus { border-color: var(--blue); }
+  .login-btn { width: 100%; padding: 13px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: inherit; transition: background 0.2s; }
+  .login-btn:hover { background: var(--blue); }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+  #admin-screen { display: none; }
+  .header { background: var(--navy); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header-logo { color: white; font-size: 18px; font-weight: 700; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-link { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; text-decoration: none; display: inline-block; }
+  .header-link:hover { background: rgba(255,255,255,0.2); }
+  .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
+  .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
+  .logout-btn:hover { background: rgba(255,255,255,0.2); }
+  .main { padding: 32px; max-width: 1000px; margin: 0 auto; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
+  .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-sub { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+  .table-wrap { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+  .table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-title { font-size: 16px; font-weight: 600; }
+  .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
+  .refresh-btn:hover { background: var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--gray); padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbff; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-active { background: #dcfce7; color: #16a34a; }
+  .badge-new { background: #ede9fe; color: #7c3aed; }
+  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; }
+  .action-btn:hover { opacity: 0.8; }
+  .btn-done { background: #ede9fe; color: #7c3aed; }
+  .btn-undo { background: #fef3c7; color: #d97706; }
+  .loading { text-align: center; padding: 48px; color: var(--text-light); }
+  .empty { text-align: center; padding: 48px; color: var(--text-light); }
+  @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .main { padding: 16px; } table { font-size: 13px; } th, td { padding: 10px 12px; } }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">990짐 관리자</div>
+    <div class="login-sub">상담 신청 관리</div>
+    <input type="password" id="pw-input" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<div id="admin-screen">
+  <div class="header">
+    <div class="header-logo">📋 상담 신청 관리</div>
+    <div class="header-right">
+      <span class="session-timer" id="session-timer"></span>
+      <a href="admin.html" class="header-link">← 구독 관리</a>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">전체 신청</div>
+        <div class="stat-value" id="stat-total">-</div>
+        <div class="stat-sub">누적</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">미처리</div>
+        <div class="stat-value" id="stat-pending" style="color:var(--purple)">-</div>
+        <div class="stat-sub">대기중</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">연락완료</div>
+        <div class="stat-value" id="stat-done" style="color:var(--green)">-</div>
+        <div class="stat-sub">처리됨</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">상담 신청 목록</div>
+        <button class="refresh-btn" onclick="loadInquiries()">🔄 새로고침</button>
+      </div>
+      <div id="inquiry-body">
+        <div class="loading">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
+const ADMIN_PW = '990gym2026!';
+const SESSION_TIMEOUT = 30 * 60 * 1000;
+
+let sessionInterval = null;
+let sessionExpiry = null;
+
+function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('inquiry_logged_in', '1');
+    sessionExpiry = Date.now() + SESSION_TIMEOUT;
+    sessionStorage.setItem('inquiry_expiry', sessionExpiry);
+    showAdmin();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function showAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'block';
+  loadInquiries();
+  startSessionTimer();
+  document.addEventListener('mousemove', resetSessionTimer);
+  document.addEventListener('keydown', resetSessionTimer);
+  document.addEventListener('click', resetSessionTimer);
+}
+
+function startSessionTimer() {
+  if (sessionInterval) clearInterval(sessionInterval);
+  sessionInterval = setInterval(function() {
+    const remaining = sessionExpiry - Date.now();
+    if (remaining <= 0) { doLogout(true); return; }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('session-timer').textContent = `${mins}:${secs.toString().padStart(2,'0')} 후 자동 로그아웃`;
+  }, 1000);
+}
+
+function resetSessionTimer() {
+  sessionExpiry = Date.now() + SESSION_TIMEOUT;
+  sessionStorage.setItem('inquiry_expiry', sessionExpiry);
+}
+
+function doLogout(auto) {
+  sessionStorage.removeItem('inquiry_logged_in');
+  sessionStorage.removeItem('inquiry_expiry');
+  if (sessionInterval) clearInterval(sessionInterval);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+  if (auto) alert('30분 동안 활동이 없어 자동 로그아웃되었습니다.');
+}
+
+window.addEventListener('load', function() {
+  const loggedIn = sessionStorage.getItem('inquiry_logged_in');
+  const expiry = parseInt(sessionStorage.getItem('inquiry_expiry'));
+  if (loggedIn && expiry && Date.now() < expiry) {
+    sessionExpiry = expiry;
+    showAdmin();
+  }
+});
+
+async function loadInquiries() {
+  document.getElementById('inquiry-body').innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=*&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const inquiries = await res.json();
+
+    const total = inquiries.length;
+    const pending = inquiries.filter(i => !i.contacted).length;
+    const done = inquiries.filter(i => i.contacted).length;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('stat-done').textContent = done;
+
+    if (!inquiries.length) {
+      document.getElementById('inquiry-body').innerHTML = '<div class="empty">상담 신청이 없습니다.</div>';
+      return;
+    }
+
+    let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>신청일시</th><th>상태</th><th>관리</th></tr></thead><tbody>`;
+    inquiries.forEach(i => {
+      const date = new Date(i.created_at).toLocaleString('ko-KR');
+      const statusBadge = i.contacted
+        ? '<span class="badge badge-active">연락완료</span>'
+        : '<span class="badge badge-new">미처리</span>';
+      const actionBtn = i.contacted
+        ? `<button class="action-btn btn-undo" onclick="toggleContacted('${i.id}', false)">미처리로</button>`
+        : `<button class="action-btn btn-done" onclick="toggleContacted('${i.id}', true)">연락완료</button>`;
+      html += `<tr><td><strong>${i.name}</strong></td><td>${i.phone}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('inquiry-body').innerHTML = html;
+  } catch(e) {
+    document.getElementById('inquiry-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
+  }
+}
+
+async function toggleContacted(id, contacted) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/inquiries?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ contacted }),
+    });
+    loadInquiries();
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+  }
+}
+</script>
+</body>
+</html>
