@@ -312,13 +312,13 @@ function renderTable() {
     if (s.status === 'cancelled') {
       const cur = s.churn_reason || '';
       let opts = `<option value="">미입력</option>`;
-      CHURN_REASONS.filter(r => r !== '기타').forEach(r => {
+      CHURN_REASONS.forEach(r => {
         opts += `<option value="${r}" ${cur===r?'selected':''}>${r}</option>`;
       });
       if (cur && !CHURN_REASONS.includes(cur)) {
         opts += `<option value="${cur}" selected>${cur}</option>`;
       }
-      churnCell = `<select class="churn-inline" onchange="updateChurnReason('${s.id}', this.value, this)">${opts}</select>`;
+      churnCell = `<select class="churn-inline" onchange="onChurnInlineChange('${s.id}', this.value, this)">${opts}</select>`;
     }
     html += `<tr>
       <td><strong>${s.name||'-'}</strong></td>
@@ -395,12 +395,26 @@ async function updateChurnReason(id, reason, el) {
     if (res.ok || res.status === 204) {
       const sub = subscribers.find(x => x.id === id);
       if (sub) sub.churn_reason = reason || null;
+      renderTable();
     } else {
       alert('사유 저장에 실패했습니다.');
     }
   } catch(e) {
     el.disabled = false;
     alert('오류: ' + e.message);
+  }
+}
+
+function onChurnInlineChange(id, value, el) {
+  if (value === '기타') {
+    const input = prompt('이탈 사유를 입력하세요', '');
+    if (input === null || !input.trim()) {
+      renderTable();
+      return;
+    }
+    updateChurnReason(id, input.trim(), el);
+  } else {
+    updateChurnReason(id, value, el);
   }
 }
 
