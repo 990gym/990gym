@@ -132,9 +132,9 @@ let sessionExpiry = null;
 function doLogin() {
   const pw = document.getElementById('pw-input').value;
   if (pw === ADMIN_PW) {
-    sessionStorage.setItem('inquiry_logged_in', '1');
+    sessionStorage.setItem('admin_logged_in', '1');
     sessionExpiry = Date.now() + SESSION_TIMEOUT;
-    sessionStorage.setItem('inquiry_expiry', sessionExpiry);
+    sessionStorage.setItem('admin_expiry', sessionExpiry);
     showAdmin();
   } else {
     document.getElementById('login-error').style.display = 'block';
@@ -164,12 +164,12 @@ function startSessionTimer() {
 
 function resetSessionTimer() {
   sessionExpiry = Date.now() + SESSION_TIMEOUT;
-  sessionStorage.setItem('inquiry_expiry', sessionExpiry);
+  sessionStorage.setItem('admin_expiry', sessionExpiry);
 }
 
 function doLogout(auto) {
-  sessionStorage.removeItem('inquiry_logged_in');
-  sessionStorage.removeItem('inquiry_expiry');
+  sessionStorage.removeItem('admin_logged_in');
+  sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-screen').style.display = 'none';
@@ -178,8 +178,8 @@ function doLogout(auto) {
 }
 
 window.addEventListener('load', function() {
-  const loggedIn = sessionStorage.getItem('inquiry_logged_in');
-  const expiry = parseInt(sessionStorage.getItem('inquiry_expiry'));
+  const loggedIn = sessionStorage.getItem('admin_logged_in');
+  const expiry = parseInt(sessionStorage.getItem('admin_expiry'));
   if (loggedIn && expiry && Date.now() < expiry) {
     sessionExpiry = expiry;
     showAdmin();
