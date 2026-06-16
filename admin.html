@@ -43,7 +43,7 @@
   .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
-  .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  .main { padding: 32px; max-width: 1300px; margin: 0 auto; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
@@ -55,14 +55,14 @@
   .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
   .refresh-btn:hover { background: var(--border); }
   table { width: 100%; border-collapse: collapse; }
-  th { background: var(--gray); padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; }
-  td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  th { background: var(--gray); padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #fafbff; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
-  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; }
+  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; white-space: nowrap; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
@@ -297,10 +297,11 @@ function renderTable() {
     document.getElementById('table-body').innerHTML = '<div class="empty">등록된 구독자가 없습니다.</div>';
     return;
   }
-  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>이탈사유</th><th>가입일</th><th>다음결제일</th><th>관리</th></tr></thead><tbody>`;
+  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>이탈사유</th><th>가입일</th><th>해지일</th><th>다음결제일</th><th>관리</th></tr></thead><tbody>`;
   subscribers.forEach(s => {
     const date = s.created_at ? new Date(s.created_at).toLocaleDateString('ko-KR') : '-';
     const nextBilling = s.next_billing_date ? new Date(s.next_billing_date).toLocaleDateString('ko-KR') : '-';
+    const cancelledAt = s.cancelled_at ? new Date(s.cancelled_at).toLocaleDateString('ko-KR') : '-';
     const statusBadge = s.status === 'active'
       ? '<span class="badge badge-active">활성</span>'
       : '<span class="badge badge-cancelled">해지</span>';
@@ -328,6 +329,7 @@ function renderTable() {
       <td>${statusBadge}</td>
       <td>${churnCell}</td>
       <td>${date}</td>
+      <td>${cancelledAt}</td>
       <td>${nextBilling}</td>
       <td>${actionBtns}</td>
     </tr>`;
@@ -442,6 +444,10 @@ async function confirmAction() {
     });
     const data = await res.json();
     if (data.success) {
+      // 해지일 기록 (해지 시에만, 복구 시엔 null로 초기화)
+      const patchBody = type === 'cancel'
+        ? { churn_reason: churnReason, cancelled_at: new Date().toISOString() }
+        : { churn_reason: null, cancelled_at: null };
       try {
         await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
           method: 'PATCH',
@@ -451,7 +457,7 @@ async function confirmAction() {
             'Content-Type': 'application/json',
             'Prefer': 'return=minimal',
           },
-          body: JSON.stringify({ churn_reason: type === 'cancel' ? churnReason : null }),
+          body: JSON.stringify(patchBody),
         });
       } catch(e) {}
       closeModal();
