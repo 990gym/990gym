@@ -504,73 +504,78 @@
 var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
   // 빌링 인증 완료 처리
 (function() {
-  var params = new URLSearchParams(window.location.search);
-  
-  // 1) 토스가 실패로 리다이렉트한 경우 (가장 흔한 첫시도 실패 원인)
-  if (params.get('fail') === '1' || params.get('code')) {
-    var failMsg = params.get('message');
-    history.replaceState({}, '', window.location.pathname);
-    sessionStorage.removeItem('pendingBilling');
-    alert('카드 등록이 완료되지 않았습니다.\n' + (failMsg ? decodeURIComponent(failMsg) + '\n\n' : '') + '다시 시도해주세요.');
-    return;
-  }
-  
-  // 2) 성공 콜백 처리
-  if (params.get('success') === '1') {
-    var authKey = params.get('authKey');
-    var customerKey = params.get('customerKey');
-    var plan = params.get('plan');
-    var name = params.get('name');
-    var phone = params.get('phone');
-    var email = params.get('email');
-    
-    // sessionStorage 백업에서 누락 정보 복구
-    try {
-      var pendingRaw = sessionStorage.getItem('pendingBilling');
-      if (pendingRaw) {
-        var pending = JSON.parse(pendingRaw);
-        plan = plan || pending.plan;
-        name = name || pending.name;
-        phone = phone || pending.phone;
-        email = email || pending.email;
-        customerKey = customerKey || pending.customerKey;
-      }
-    } catch(e) {}
-    sessionStorage.removeItem('pendingBilling');
-    
-    if (!authKey || !customerKey) {
+  try {
+    var params = new URLSearchParams(window.location.search);
+
+    // 1) 토스가 실패로 리다이렉트한 경우 (가장 흔한 첫시도 실패 원인)
+    if (params.get('fail') === '1' || params.get('code')) {
+      var failMsg = params.get('message');
       history.replaceState({}, '', window.location.pathname);
-      alert('카드 등록 정보를 불러오지 못했습니다. 다시 시도해주세요.');
+      try { sessionStorage.removeItem('pendingBilling'); } catch(e) {}
+      alert('카드 등록이 완료되지 않았습니다.\n' + (failMsg ? decodeURIComponent(failMsg) + '\n\n' : '') + '다시 시도해주세요.');
       return;
     }
-    
-    // 로딩 오버레이 표시
-    var loadingDiv = document.createElement('div');
-    loadingDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.98);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:\'Noto Sans KR\',sans-serif;padding:1rem;text-align:center;';
-    loadingDiv.innerHTML = '<div style="width:50px;height:50px;border:4px solid #e8effe;border-top:4px solid #2B5FC7;border-radius:50%;animation:spin 1s linear infinite;"></div><p style="margin-top:1.5rem;font-size:1.05rem;color:#111;font-weight:700;">구독 처리 중입니다</p><p style="margin-top:0.5rem;font-size:0.85rem;color:#666;line-height:1.6;">결제가 진행 중이에요.<br>페이지를 닫거나 새로고침하지 마세요.</p><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-    document.body.appendChild(loadingDiv);
-    
-    // URL 정리 (새로고침으로 같은 authKey 재사용 방지)
-    history.replaceState({}, '', window.location.pathname);
-    
-    fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      loadingDiv.remove();
-      if (data.success) {
-        alert('구독이 완료되었습니다! 환영합니다 🎉');
-      } else {
-        alert('오류가 발생했습니다: ' + (data.error || data.message || '다시 시도해주세요'));
+
+    // 2) 성공 콜백 처리
+    if (params.get('success') === '1') {
+      var authKey = params.get('authKey');
+      var customerKey = params.get('customerKey');
+      var plan = params.get('plan');
+      var name = params.get('name');
+      var phone = params.get('phone');
+      var email = params.get('email');
+
+      // sessionStorage 백업에서 누락 정보 복구 (저장소 접근이 막혀도 URL 파라미터만으로 계속 진행)
+      try {
+        var pendingRaw = sessionStorage.getItem('pendingBilling');
+        if (pendingRaw) {
+          var pending = JSON.parse(pendingRaw);
+          plan = plan || pending.plan;
+          name = name || pending.name;
+          phone = phone || pending.phone;
+          email = email || pending.email;
+          customerKey = customerKey || pending.customerKey;
+        }
+      } catch(e) {}
+      try { sessionStorage.removeItem('pendingBilling'); } catch(e) {}
+
+      if (!authKey || !customerKey) {
+        history.replaceState({}, '', window.location.pathname);
+        alert('카드 등록 정보를 불러오지 못했습니다. 다시 시도해주세요.');
+        return;
       }
-    })
-    .catch(function(e) {
-      loadingDiv.remove();
-      alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
-    });
+
+      // 로딩 오버레이 표시
+      var loadingDiv = document.createElement('div');
+      loadingDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.98);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:\'Noto Sans KR\',sans-serif;padding:1rem;text-align:center;';
+      loadingDiv.innerHTML = '<div style="width:50px;height:50px;border:4px solid #e8effe;border-top:4px solid #2B5FC7;border-radius:50%;animation:spin 1s linear infinite;"></div><p style="margin-top:1.5rem;font-size:1.05rem;color:#111;font-weight:700;">구독 처리 중입니다</p><p style="margin-top:0.5rem;font-size:0.85rem;color:#666;line-height:1.6;">결제가 진행 중이에요.<br>페이지를 닫거나 새로고침하지 마세요.</p><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+      document.body.appendChild(loadingDiv);
+
+      // URL 정리 (새로고침으로 같은 authKey 재사용 방지)
+      history.replaceState({}, '', window.location.pathname);
+
+      fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        loadingDiv.remove();
+        if (data.success) {
+          alert('구독이 완료되었습니다! 환영합니다 🎉');
+        } else {
+          alert('오류가 발생했습니다: ' + (data.error || data.message || '다시 시도해주세요'));
+        }
+      })
+      .catch(function(e) {
+        loadingDiv.remove();
+        alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
+      });
+    }
+  } catch (e) {
+    console.error('결제 복귀 처리 중 오류:', e);
+    alert('결제 확인 처리 중 오류가 발생했습니다. 다시 시도하시거나 마이페이지에서 구독 상태를 확인해주세요.');
   }
 })();
 var selectedPlan = { name: '', price: 0 };
