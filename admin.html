@@ -68,6 +68,17 @@
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
   .btn-plan { background: #fef3c7; color: #d97706; }
+  .btn-billing { background: #dbeafe; color: #2563eb; }
+  .modal-btn-confirm.blue { background: #2563eb; color: white; }
+  .billing-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; }
+  .billing-row label { width: 84px; color: var(--text-light); flex-shrink: 0; white-space: nowrap; }
+  .billing-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; min-width: 0; }
+  .billing-row input:focus { border-color: var(--blue); }
+  .billing-quick { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .billing-quick button { padding: 6px 10px; border: 1px solid var(--border); background: white; border-radius: 6px; font-size: 12px; font-family: inherit; cursor: pointer; }
+  .billing-quick button:hover { background: var(--gray); }
+  .billing-preview { margin-top: 14px; padding: 10px 12px; background: var(--gray); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+  .billing-error { margin-top: 10px; font-size: 13px; color: #dc2626; display: none; }
   .loading { text-align: center; padding: 48px; color: var(--text-light); }
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
@@ -176,6 +187,33 @@
     <div class="modal-btns" style="margin-top:24px;">
       <button class="modal-btn modal-btn-cancel" onclick="closePlanModal()">취소</button>
       <button class="modal-btn modal-btn-confirm orange" id="plan-confirm-btn" onclick="confirmPlanChange()">변경</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="billing-modal">
+  <div class="modal">
+    <div class="modal-title">결제일 변경</div>
+    <div class="modal-desc" id="billing-modal-desc" style="margin-bottom:8px;"></div>
+    <div class="billing-row">
+      <label>며칠 미루기</label>
+      <input type="number" id="billing-days" min="-60" max="120" step="1" placeholder="예: 8" oninput="onBillingDaysInput()">
+    </div>
+    <div class="billing-quick">
+      <button type="button" onclick="setBillingDays(7)">+7일</button>
+      <button type="button" onclick="setBillingDays(14)">+14일</button>
+      <button type="button" onclick="setBillingDays(30)">+30일</button>
+    </div>
+    <div class="billing-row">
+      <label>새 결제일</label>
+      <input type="date" id="billing-date" oninput="onBillingDateInput()">
+    </div>
+    <div class="billing-preview" id="billing-preview"></div>
+    <div class="billing-error" id="billing-error"></div>
+    <div style="font-size:12px;color:var(--text-light);margin-top:10px;">자동결제는 결제일 당일 오후 6시에 진행됩니다. 오늘 이전 날짜는 저장할 수 없습니다.</div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closeBillingModal()">취소</button>
+      <button class="modal-btn modal-btn-confirm blue" id="billing-confirm-btn" onclick="confirmBillingChange()">변경</button>
     </div>
   </div>
 </div>
@@ -308,6 +346,7 @@ function renderTable() {
       : '<span class="badge badge-cancelled">해지</span>';
     const actionBtns = s.status === 'active'
       ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
+         <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
          <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
     let churnCell = '-';
@@ -523,6 +562,146 @@ async function confirmPlanChange() {
   } catch(e) {
     alert('오류: ' + e.message);
     closePlanModal();
+  }
+}
+
+// ===== 결제일 변경 =====
+// 날짜는 전부 'YYYY-MM-DD' 문자열로 다룬다 (시간대 때문에 하루 밀리는 것 방지).
+// 자동결제(billing-charge)는 next_billing_date === 오늘인 회원만 청구하므로
+// 지난 날짜나 잘못된 형식이 저장되면 그 회원은 다시는 결제되지 않는다 → 여기서 막는다.
+let currentBillingAction = null;
+
+function todayKST() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+}
+function addDaysYmd(ymd, n) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+function diffDaysYmd(from, to) {
+  const toUtc = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  return Math.round((toUtc(to) - toUtc(from)) / 86400000);
+}
+function fmtYmdKo(ymd) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dow = ['일','월','화','수','목','금','토'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${y}. ${m}. ${d}. (${dow})`;
+}
+function isValidYmd(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  return addDaysYmd(s, 0) === s;   // 2026-02-30 같은 없는 날짜 거르기
+}
+
+function openBillingModal(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) { alert('회원 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.'); return; }
+  const today = todayKST();
+  const current = s.next_billing_date && isValidYmd(String(s.next_billing_date).slice(0, 10))
+    ? String(s.next_billing_date).slice(0, 10) : null;
+  currentBillingAction = { id: s.id, name: s.name, current, base: current || today };
+  document.getElementById('billing-modal-desc').textContent =
+    `${s.name}님 · ${s.plan} · 현재 다음 결제일 ${current ? fmtYmdKo(current) : '없음'}`;
+  const dateInput = document.getElementById('billing-date');
+  dateInput.min = addDaysYmd(today, 1);
+  dateInput.value = '';
+  document.getElementById('billing-days').value = '';
+  renderBillingPreview();
+  document.getElementById('billing-modal').classList.add('active');
+}
+
+function closeBillingModal() {
+  document.getElementById('billing-modal').classList.remove('active');
+  const btn = document.getElementById('billing-confirm-btn');
+  btn.disabled = false;
+  btn.textContent = '변경';
+  currentBillingAction = null;
+}
+
+function setBillingDays(n) {
+  document.getElementById('billing-days').value = n;
+  onBillingDaysInput();
+}
+function onBillingDaysInput() {
+  const a = currentBillingAction; if (!a) return;
+  const n = parseInt(document.getElementById('billing-days').value, 10);
+  document.getElementById('billing-date').value = isNaN(n) ? '' : addDaysYmd(a.base, n);
+  renderBillingPreview();
+}
+function onBillingDateInput() {
+  const a = currentBillingAction; if (!a) return;
+  const v = document.getElementById('billing-date').value;
+  document.getElementById('billing-days').value = isValidYmd(v) ? diffDaysYmd(a.base, v) : '';
+  renderBillingPreview();
+}
+
+// 입력값 검사. 문제 있으면 에러 문구, 없으면 null
+function billingError(newDate) {
+  const a = currentBillingAction;
+  if (!newDate) return '새 결제일을 입력해주세요.';
+  if (!isValidYmd(newDate)) return '날짜 형식이 올바르지 않습니다.';
+  const today = todayKST();
+  if (newDate <= today) return '결제일은 내일 이후로만 설정할 수 있습니다. (지난 날짜가 저장되면 자동결제가 영영 안 됩니다)';
+  if (a.current && newDate === a.current) return '현재 결제일과 같습니다.';
+  return null;
+}
+
+function renderBillingPreview() {
+  const a = currentBillingAction; if (!a) return;
+  const v = document.getElementById('billing-date').value;
+  const preview = document.getElementById('billing-preview');
+  const errEl = document.getElementById('billing-error');
+  const err = v ? billingError(v) : null;
+  errEl.style.display = err ? 'block' : 'none';
+  errEl.textContent = err || '';
+  if (!v || !isValidYmd(v)) {
+    preview.innerHTML = '미룰 일수를 입력하거나 날짜를 직접 고르세요.';
+    return;
+  }
+  const shift = a.current ? diffDaysYmd(a.current, v) : null;
+  const shiftTxt = shift === null ? '' : (shift > 0 ? ` <b>(${shift}일 뒤로)</b>` : ` <b style="color:#dc2626">(${-shift}일 앞으로)</b>`);
+  preview.innerHTML =
+    `${a.current ? fmtYmdKo(a.current) : '없음'} → <b>${fmtYmdKo(v)}</b>${shiftTxt}<br>` +
+    `<span style="color:var(--text-light)">그날 오후 6시에 자동결제되고, 이후 매달 같은 날짜로 이어집니다.</span>`;
+}
+
+async function confirmBillingChange() {
+  const a = currentBillingAction;
+  if (!a) return;
+  const newDate = document.getElementById('billing-date').value;
+  const err = billingError(newDate);
+  if (err) { renderBillingPreview(); alert(err); return; }
+  const fromToday = diffDaysYmd(todayKST(), newDate);
+  if (fromToday > 92 && !confirm(`오늘부터 ${fromToday}일 뒤입니다. 그동안 결제가 없습니다. 맞나요?`)) return;
+  if (a.current && newDate < a.current && !confirm('결제일을 앞당기는 변경입니다. 맞나요?')) return;
+
+  const btn = document.getElementById('billing-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+  const { id, name } = a;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({ next_billing_date: newDate }),
+    });
+    // 저장된 값을 돌려받아 실제로 바뀌었는지 확인 (권한 문제로 0건 수정돼도 200이 오기 때문)
+    const rows = res.ok ? await res.json().catch(() => []) : [];
+    const saved = Array.isArray(rows) && rows[0] && String(rows[0].next_billing_date).slice(0, 10);
+    closeBillingModal();
+    if (saved === newDate) {
+      loadSubscribers();
+      alert(`${name}님 다음 결제일이 ${fmtYmdKo(newDate)}로 변경되었습니다.`);
+    } else {
+      alert('결제일 변경에 실패했습니다. 새로고침 후 다시 확인해주세요.');
+    }
+  } catch (e) {
+    alert('오류: ' + e.message);
+    closeBillingModal();
   }
 }
 </script>
