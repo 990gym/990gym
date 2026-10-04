@@ -43,7 +43,7 @@
   .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
-  .main { padding: 32px; max-width: 1300px; margin: 0 auto; }
+  .main { padding: 32px clamp(12px, 2.5vw, 32px); margin: 0 auto; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
@@ -55,15 +55,17 @@
   .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
   .refresh-btn:hover { background: var(--border); }
   table { width: 100%; border-collapse: collapse; }
-  th { background: var(--gray); padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-  td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
+  th { background: var(--gray); padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  td { padding: 14px 12px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
   td:first-child { white-space: normal; min-width: 80px; max-width: 120px; word-break: break-word; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #fafbff; }
+  td.col-email { white-space: normal; word-break: break-all; min-width: 130px; font-size: 13px; color: var(--text-light); }
+  .actions { display: flex; flex-wrap: nowrap; gap: 4px; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
   .badge-active { background: #dcfce7; color: #16a34a; }
   .badge-cancelled { background: #fee2e2; color: #dc2626; }
-  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; margin-right: 4px; white-space: nowrap; }
+  .action-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: opacity 0.2s; white-space: nowrap; }
   .action-btn:hover { opacity: 0.8; }
   .btn-cancel { background: #fee2e2; color: #dc2626; }
   .btn-activate { background: #dcfce7; color: #16a34a; }
@@ -83,7 +85,7 @@
   .empty { text-align: center; padding: 48px; color: var(--text-light); }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
   .modal-overlay.active { display: flex; }
-  .modal { background: white; border-radius: 16px; padding: 32px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal { background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: calc(100vw - 32px); box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
   .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
   .modal-desc { font-size: 14px; color: var(--text-light); margin-bottom: 24px; }
   .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
@@ -96,9 +98,34 @@
   .plan-select:focus { border-color: var(--blue); }
   .churn-input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; margin-top: 8px; }
   .churn-input:focus { border-color: var(--blue); }
-  .churn-inline { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: white; max-width: 140px; cursor: pointer; }
+  .churn-inline { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: white; width: 100%; min-width: 96px; max-width: 170px; text-overflow: ellipsis; cursor: pointer; }
   .churn-inline:focus { border-color: var(--blue); outline: none; }
-  @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .main { padding: 16px; } table { font-size: 13px; } th, td { padding: 10px 12px; } }
+  /* 화면 폭에 맞춰 덜 중요한 칸부터 숨김 → 900px 이하는 카드형 */
+  @media (max-width: 1280px) { .col-cancelled { display: none; } }
+  @media (max-width: 1100px) { .col-email { display: none; } }
+  @media (max-width: 1024px) { .col-join { display: none; } }
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .main { padding: 16px 12px; }
+    .header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .header-right { flex-wrap: wrap; gap: 8px; }
+    .modal { padding: 24px 20px; }
+    .sub-table thead { display: none; }
+    .sub-table, .sub-table tbody, .sub-table tr { display: block; width: 100%; }
+    .sub-table tr { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .sub-table tr:last-child { border-bottom: none; }
+    .sub-table td { display: flex; align-items: center; gap: 12px; padding: 3px 0; border: none; white-space: normal; min-width: 0; max-width: none; font-size: 14px; }
+    .sub-table td::before { content: attr(data-label); width: 70px; flex-shrink: 0; font-size: 12px; color: var(--text-light); }
+    .sub-table td.col-name { font-size: 16px; padding-bottom: 6px; }
+    .sub-table td.col-name::before { display: none; }
+    .sub-table td.col-email, .sub-table td.col-join { display: flex; }
+    .sub-table td.col-cancelled { display: none; }
+    .sub-table td.col-actions { padding-top: 10px; }
+    .sub-table .actions { flex-wrap: wrap; }
+    .sub-table td.col-actions::before { display: none; }
+    .sub-table .action-btn { padding: 8px 14px; font-size: 13px; }
+    tr:hover td { background: none; }
+  }
 </style>
 </head>
 <body>
@@ -336,7 +363,7 @@ function renderTable() {
     document.getElementById('table-body').innerHTML = '<div class="empty">등록된 구독자가 없습니다.</div>';
     return;
   }
-  let html = `<table><thead><tr><th>이름</th><th>연락처</th><th>이메일</th><th>플랜</th><th>상태</th><th>이탈사유</th><th>가입일</th><th>해지일</th><th>다음결제일</th><th>관리</th></tr></thead><tbody>`;
+  let html = `<table class="sub-table"><thead><tr><th>이름</th><th>연락처</th><th class="col-email">이메일</th><th>플랜</th><th>상태</th><th>이탈사유</th><th class="col-join">가입일</th><th class="col-cancelled">해지일</th><th>다음결제일</th><th>관리</th></tr></thead><tbody>`;
   subscribers.forEach(s => {
     const date = s.created_at ? new Date(s.created_at).toLocaleDateString('ko-KR') : '-';
     const nextBilling = s.next_billing_date ? new Date(s.next_billing_date).toLocaleDateString('ko-KR') : '-';
@@ -362,16 +389,16 @@ function renderTable() {
       churnCell = `<select class="churn-inline" onchange="onChurnInlineChange('${s.id}', this.value, this)">${opts}</select>`;
     }
     html += `<tr>
-      <td><strong>${s.name||'-'}</strong></td>
-      <td>${s.phone||'-'}</td>
-      <td>${s.email||'-'}</td>
-      <td>${s.plan||'-'}</td>
-      <td>${statusBadge}</td>
-      <td>${churnCell}</td>
-      <td>${date}</td>
-      <td>${cancelledAt}</td>
-      <td>${nextBilling}</td>
-      <td>${actionBtns}</td>
+      <td class="col-name" data-label="이름"><strong>${s.name||'-'}</strong></td>
+      <td class="col-phone" data-label="연락처">${s.phone||'-'}</td>
+      <td class="col-email" data-label="이메일">${s.email||'-'}</td>
+      <td data-label="플랜">${s.plan||'-'}</td>
+      <td data-label="상태">${statusBadge}</td>
+      <td class="col-churn" data-label="이탈사유">${churnCell}</td>
+      <td class="col-join" data-label="가입일">${date}</td>
+      <td class="col-cancelled" data-label="해지일">${cancelledAt}</td>
+      <td data-label="다음결제일">${nextBilling}</td>
+      <td class="col-actions" data-label="관리"><div class="actions">${actionBtns}</div></td>
     </tr>`;
   });
   html += '</tbody></table>';
