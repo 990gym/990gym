@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>990 스피닝 | 첫 달 시작하기</title>
+<meta name="description" content="삼송·신원동 990짐 저녁 스피닝. 무약정, 언제든 해지, 7일 내 미이용 시 전액 환불.">
+<meta property="og:title" content="990 스피닝 | 첫 달 시작하기">
+<meta property="og:description" content="불 끄고, 음악 켜고, 페달. 무약정 · 언제든 해지 · 7일 내 미이용 시 전액 환불.">
+<meta property="og:image" content="https://the990.co.kr/og-image.jpg">
+<meta property="og:url" content="https://the990.co.kr/spinning.html">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://js.tosspayments.com/v1/payment"></script>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151923;
+    --line: #262c3a;
+    --text: #f3f5fa;
+    --muted: #9aa3b5;
+    --pink: #ff2d95;
+    --violet: #7b5cff;
+    --blue: #2B5FC7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; padding-bottom: 96px; }
+  a { color: inherit; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 0 20px; }
+
+  /* 상단 */
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+  .logo { font-weight: 900; font-size: 1.15rem; letter-spacing: -0.5px; text-decoration: none; }
+  .logo span { color: var(--pink); }
+  .top-call { font-size: 0.8rem; color: var(--muted); text-decoration: none; border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; }
+
+  /* 히어로 */
+  .hero { position: relative; padding: 28px 0 32px; }
+  .glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.55; pointer-events: none; }
+  .glow.a { width: 220px; height: 220px; background: var(--pink); top: -40px; right: -80px; }
+  .glow.b { width: 200px; height: 200px; background: var(--violet); top: 140px; left: -100px; opacity: 0.4; }
+  .tag { position: relative; display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--pink); border: 1px solid rgba(255,45,149,0.5); padding: 4px 12px; border-radius: 999px; margin-bottom: 16px; }
+  .hero h1 { position: relative; font-size: 2.3rem; font-weight: 900; line-height: 1.2; letter-spacing: -1.5px; }
+  .hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--pink), var(--violet)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.sub { position: relative; margin-top: 14px; color: var(--muted); font-size: 0.98rem; }
+
+  /* 가격 카드 */
+  .offer { position: relative; margin-top: 26px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
+  .offer-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+  .offer-price { margin-top: 4px; font-size: 2.1rem; font-weight: 900; letter-spacing: -1px; }
+  .offer-price small { font-size: 0.95rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
+  .offer-incl { margin-top: 6px; font-size: 0.9rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .chip { font-size: 0.75rem; font-weight: 700; background: rgba(255,255,255,0.06); border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px; }
+  .cta { display: block; width: 100%; margin-top: 18px; padding: 16px; border: none; border-radius: 12px; font-family: inherit; font-size: 1.05rem; font-weight: 900; color: #fff; background: linear-gradient(90deg, var(--pink), var(--violet)); cursor: pointer; box-shadow: 0 8px 28px rgba(255,45,149,0.35); }
+  .cta:active { transform: scale(0.99); }
+  .cta-note { margin-top: 10px; font-size: 0.75rem; color: var(--muted); text-align: center; }
+
+  /* 섹션 */
+  section.blk { padding: 36px 0 8px; }
+  .blk h2 { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 16px; }
+  .why { display: grid; gap: 10px; }
+  .why-item { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .why-item b { display: block; font-size: 0.98rem; margin-bottom: 2px; }
+  .why-item span { font-size: 0.86rem; color: var(--muted); }
+
+  .steps { list-style: none; counter-reset: s; display: grid; gap: 12px; }
+  .steps li { counter-increment: s; display: flex; gap: 14px; align-items: flex-start; font-size: 0.92rem; }
+  .steps li::before { content: counter(s); flex: 0 0 28px; height: 28px; border-radius: 50%; background: rgba(255,45,149,0.15); color: var(--pink); font-weight: 900; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .steps li span { color: var(--muted); display: block; font-size: 0.82rem; }
+
+  /* 스피닝 시간표 */
+  .tt { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; margin: 0 -4px; }
+  .tt th { font-size: 0.78rem; font-weight: 700; color: var(--muted); padding: 4px 0; }
+  .tt th.t { text-align: left; width: 22%; }
+  .tt td { height: 44px; border-radius: 10px; text-align: center; font-size: 0.72rem; }
+  .tt td.time { text-align: left; font-weight: 700; font-size: 0.88rem; color: var(--text); }
+  .tt td.on { background: linear-gradient(135deg, rgba(255,45,149,0.9), rgba(123,92,255,0.9)); color: #fff; font-weight: 900; font-size: 1rem; }
+  .tt td.off { background: rgba(255,255,255,0.03); border: 1px dashed var(--line); color: #4a5164; }
+  .tt tr.sep td { height: 10px; background: none; border: none; }
+  .tt .part { font-size: 0.7rem; color: var(--pink); font-weight: 700; display: block; }
+  .tt-note { margin-top: 12px; font-size: 0.8rem; color: var(--muted); }
+  .when { position: relative; margin-top: 12px; font-size: 0.85rem; font-weight: 700; }
+  .when b { color: var(--pink); }
+
+  .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  .faq summary { font-weight: 700; font-size: 0.93rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: '+'; color: var(--muted); font-weight: 400; }
+  .faq details[open] summary::after { content: '−'; }
+  .faq p { margin-top: 8px; font-size: 0.86rem; color: var(--muted); }
+
+  footer { margin-top: 40px; border-top: 1px solid var(--line); padding: 24px 0 8px; font-size: 0.72rem; color: #6b7386; line-height: 1.8; }
+  footer a { color: #8c94a8; }
+
+  /* 하단 고정 CTA */
+  .sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: rgba(11,13,18,0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); transform: translateY(110%); transition: transform 0.25s; }
+  .sticky.show { transform: translateY(0); }
+  .sticky .inner { max-width: 520px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .sticky .p { flex: 1; font-size: 0.8rem; color: var(--muted); line-height: 1.3; }
+  .sticky .p b { display: block; color: var(--text); font-size: 1.05rem; }
+  .sticky .cta { width: auto; margin: 0; padding: 14px 22px; font-size: 0.95rem; box-shadow: none; }
+
+  /* 결제 모달 (바텀시트) */
+  .sheet-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; justify-content: center; }
+  .sheet-bg.active { display: flex; }
+  .sheet { width: 100%; max-width: 520px; background: #fff; color: #111; border-radius: 18px 18px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); max-height: 92vh; overflow-y: auto; }
+  .sheet h3 { font-size: 1.15rem; font-weight: 900; }
+  .sheet .info { font-size: 0.85rem; color: #555; margin: 4px 0 18px; }
+  .sheet .info b { color: var(--pink); }
+  .fg { margin-bottom: 12px; }
+  .fg label { display: block; font-size: 0.78rem; font-weight: 700; color: #444; margin-bottom: 4px; }
+  .fg input { width: 100%; border: 1.5px solid #dfe3ec; border-radius: 10px; padding: 13px 14px; font-family: inherit; font-size: 1rem; outline: none; }
+  .fg input:focus { border-color: var(--pink); }
+  .terms { background: #f5f6fa; border-radius: 10px; padding: 12px 14px; font-size: 0.76rem; color: #555; line-height: 1.7; margin: 6px 0 14px; }
+  .agree { display: flex; gap: 8px; align-items: flex-start; font-size: 0.82rem; color: #333; margin-bottom: 14px; }
+  .agree input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--pink); flex: 0 0 auto; }
+  .agree a { color: #555; }
+  .sheet .cta { margin-top: 0; }
+  .sheet .cancel { display: block; width: 100%; margin-top: 8px; padding: 12px; background: none; border: none; font-family: inherit; font-size: 0.88rem; color: #888; cursor: pointer; }
+
+  /* 완료 화면 */
+  .done-bg { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  .done-bg.active { display: flex; }
+  .done h2 { font-size: 1.6rem; font-weight: 900; margin: 12px 0 8px; }
+  .done p { color: var(--muted); font-size: 0.92rem; }
+  .done .cta { margin-top: 24px; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="https://the990.co.kr">990<span>짐</span></a>
+    <a class="top-call" href="tel:02-371-2684">전화 문의</a>
+  </header>
+
+  <!-- 히어로: 들어오자마자 가격과 결제 버튼이 보이게 -->
+  <section class="hero">
+    <div class="glow a"></div><div class="glow b"></div>
+    <div class="tag">삼송 · 신원동 저녁 스피닝</div>
+    <h1>불 끄고, 음악 켜고,<br><em>페달.</em></h1>
+    <p class="sub">운동 안 하던 사람도 괜찮아요.<br>한 달 동안 마음껏 타보고 결정하세요.</p>
+    <p class="when">퇴근 후 <b>저녁 7:30 · 8:30</b> (월~목)<br><span style="color:var(--muted);font-weight:500">오전 9:30 · 10:30 (월~금)</span></p>
+
+    <div class="offer">
+      <div class="offer-label">첫 달 시작하기 · 프리미엄</div>
+      <div class="offer-price">99,000원<small>/ 첫 달</small></div>
+      <div class="offer-incl">스피닝 무제한 + 요가·필라테스·줌바 + 헬스장 이용</div>
+      <div class="chips">
+        <span class="chip">무약정</span>
+        <span class="chip">언제든 해지</span>
+        <span class="chip">7일 내 미이용 시 전액 환불</span>
+      </div>
+      <button class="cta" id="hero-cta" onclick="openSheet()">지금 시작하기 →</button>
+      <p class="cta-note">카드 등록 1분 · 등록 즉시 이용 가능</p>
+    </div>
+  </section>
+
+  <section class="blk">
+    <h2>스피닝 시간표</h2>
+    <table class="tt">
+      <thead>
+        <tr><th class="t"></th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="time"><span class="part">오전</span>09:30</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+        <tr><td class="time">10:30</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td></tr>
+        <tr class="sep"><td colspan="6"></td></tr>
+        <tr><td class="time"><span class="part">저녁</span>19:30</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="off">–</td></tr>
+        <tr><td class="time">20:30</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="on">●</td><td class="off">–</td></tr>
+      </tbody>
+    </table>
+    <p class="tt-note">주 18회 · 프리미엄은 요가·필라테스·줌바 등 다른 GX 수업도 무제한이에요.</p>
+  </section>
+
+  <section class="blk">
+    <h2>처음이어도, 계속.</h2>
+    <div class="why">
+      <div class="why-item"><b>어두운 조명, 눈치 볼 사람 없어요</b><span>조명이 꺼지면 다들 자기 페달에만 집중해요.</span></div>
+      <div class="why-item"><b>강도는 내가 조절해요</b><span>저항 다이얼을 내 몸에 맞게. 따라가기 벅차면 천천히 밟아도 돼요.</span></div>
+      <div class="why-item"><b>스피닝만이 아니에요</b><span>요가·필라테스·줌바 등 GX 전체와 헬스장까지 한 달 무제한.</span></div>
+      <div class="why-item"><b>운동복·수건 대여 포함</b><span>퇴근길에 몸만 오세요. 지인 1명 1일 초대권(월 1회)도 있어요.</span></div>
+    </div>
+  </section>
+
+  <section class="blk">
+    <h2>이렇게 시작해요</h2>
+    <ol class="steps">
+      <li><div>카드 등록<span>이름·연락처·이메일 입력 후 토스페이먼츠로 카드 등록 (1분)</span></div></li>
+      <li><div>첫 달 99,000원 결제<span>등록 즉시 결제되고 바로 이용할 수 있어요</span></div></li>
+      <li><div>센터 방문해서 수업 참여<span>첫 방문 때 인포에서 이름만 말씀해 주세요</span></div></li>
+      <li><div>계속할지는 한 달 타보고 결정<span>다음 달부터 같은 날짜에 자동결제, 원하면 언제든 해지</span></div></li>
+    </ol>
+  </section>
+
+  <section class="blk faq">
+    <h2>자주 묻는 질문</h2>
+    <details><summary>운동을 거의 안 해봤는데 따라갈 수 있나요?</summary><p>네. 강도를 직접 조절할 수 있어서 처음 오신 분도 내 속도로 탈 수 있어요. 첫 수업 전에 강사님께 처음이라고 말씀해 주세요.</p></details>
+    <details><summary>약정이 있나요? 해지는 어떻게 하나요?</summary><p>약정 없어요. 해지는 카카오톡 채널이나 전화로 말씀해 주시면 바로 처리해 드려요. 해지하면 다음 달부터 결제되지 않아요.</p></details>
+    <details><summary>환불은 되나요?</summary><p>결제 후 7일 이내 한 번도 이용하지 않으셨다면 전액 환불해 드려요.</p></details>
+    <details><summary>운영 시간은요?</summary><p>평일 06:00-23:30, 주말·공휴일 09:00-20:00 (2·4째주 일요일 휴관). 스피닝은 평일 오전 9:30·10:30(월~금), 저녁 7:30·8:30(월~목)이에요.</p></details>
+    <details><summary>어디에 있나요?</summary><p>경기도 고양시 덕양구 권율대로 900, 7층 (신원동, 삼송S프라자)</p></details>
+  </section>
+
+  <footer>
+    <p><b>990짐</b> | 대표자: 노준석 | 사업자등록번호: 177-12-02806</p>
+    <p>주소: 경기도 고양시 덕양구 권율대로 900, 7층 (신원동, 삼송S프라자)</p>
+    <p>통신판매업신고: 제2026-고양덕양구-0592호 | 전화: 02-371-2684</p>
+    <p><a href="https://the990.co.kr" target="_blank">이용약관 · 개인정보처리방침 · 환불정책</a> | <a href="http://pf.kakao.com/_SxakPn" target="_blank">카카오톡 채널</a></p>
+    <p style="margin-top:8px">© 2025 990짐</p>
+  </footer>
+</div>
+
+<!-- 하단 고정 CTA -->
+<div class="sticky" id="sticky">
+  <div class="inner">
+    <div class="p">첫 달 · 스피닝 무제한<b>99,000원</b></div>
+    <button class="cta" onclick="openSheet()">시작하기</button>
+  </div>
+</div>
+
+<!-- 결제 바텀시트 -->
+<div class="sheet-bg" id="sheet-bg">
+  <div class="sheet">
+    <h3>990 스피닝 시작하기</h3>
+    <p class="info"><b>프리미엄</b> · 첫 달 <b>99,000원</b> (스피닝·GX 무제한 + 헬스)</p>
+    <div class="fg"><label for="pay-name">이름</label><input type="text" id="pay-name" placeholder="홍길동" autocomplete="name"></div>
+    <div class="fg"><label for="pay-phone">연락처</label><input type="tel" id="pay-phone" placeholder="010-0000-0000" autocomplete="tel" inputmode="numeric"></div>
+    <div class="fg"><label for="pay-email">이메일</label><input type="email" id="pay-email" placeholder="example@email.com" autocomplete="email"></div>
+    <div class="terms">
+      · 카드 등록 즉시 첫 달 99,000원이 결제돼요.<br>
+      · 다음 달부터 매월 같은 날짜에 99,000원이 자동결제돼요.<br>
+      · 무약정이며, 카카오톡·전화로 언제든 해지할 수 있어요.<br>
+      · 결제 후 7일 이내 미이용 시 전액 환불돼요.
+    </div>
+    <label class="agree"><input type="checkbox" id="pay-agree"><span>위 정기결제 내용과 <a href="https://the990.co.kr" target="_blank">이용약관·개인정보처리방침</a>에 동의해요.</span></label>
+    <button class="cta" id="pay-submit-btn" onclick="requestBilling()">카드 등록하고 시작하기 →</button>
+    <button class="cancel" onclick="closeSheet()">닫기</button>
+  </div>
+</div>
+
+<!-- 결제 완료 화면 -->
+<div class="done-bg" id="done">
+  <div class="done">
+    <div style="font-size:3rem">🚴</div>
+    <h2>환영해요!</h2>
+    <p>구독이 완료됐어요.<br>센터에 오셔서 인포에 이름만 말씀해 주세요.<br>스피닝은 저녁 7:30·8:30(월~목), 오전 9:30·10:30(월~금)이에요.</p>
+    <a class="cta" href="http://pf.kakao.com/_SxakPn" target="_blank">카카오톡 채널 추가하기</a>
+  </div>
+</div>
+
+<script>
+// 토스페이먼츠 빌링 (index.html과 동일한 키·서버 사용)
+var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
+var PLAN = { name: '프리미엄', price: 99000 }; // 서버(billing-confirm)는 플랜 이름으로 금액을 정함
+
+// 메타 픽셀이 설치돼 있으면 구매 이벤트 전송 (없으면 아무것도 안 함)
+function trackPurchase() {
+  try { if (window.fbq) fbq('track', 'Purchase', { value: PLAN.price, currency: 'KRW', content_name: 'spinning_premium' }); } catch (e) {}
+}
+
+// 결제 복귀 처리
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search);
+
+    if (params.get('fail') === '1' || params.get('code')) {
+      var failMsg = params.get('message');
+      history.replaceState({}, '', window.location.pathname);
+      try { sessionStorage.removeItem('pendingBilling'); } catch (e) {}
+      alert('카드 등록이 완료되지 않았습니다.\n' + (failMsg ? decodeURIComponent(failMsg) + '\n\n' : '') + '다시 시도해주세요.');
+      return;
+    }
+
+    if (params.get('success') === '1') {
+      var authKey = params.get('authKey');
+      var customerKey = params.get('customerKey');
+      var plan = params.get('plan');
+      var name = params.get('name');
+      var phone = params.get('phone');
+      var email = params.get('email');
+
+      try {
+        var pendingRaw = sessionStorage.getItem('pendingBilling');
+        if (pendingRaw) {
+          var pending = JSON.parse(pendingRaw);
+          plan = plan || pending.plan;
+          name = name || pending.name;
+          phone = phone || pending.phone;
+          email = email || pending.email;
+          customerKey = customerKey || pending.customerKey;
+        }
+      } catch (e) {}
+      try { sessionStorage.removeItem('pendingBilling'); } catch (e) {}
+
+      if (!authKey || !customerKey) {
+        history.replaceState({}, '', window.location.pathname);
+        alert('카드 등록 정보를 불러오지 못했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      var loadingDiv = document.createElement('div');
+      loadingDiv.style.cssText = 'position:fixed;inset:0;background:#0b0d12;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:\'Noto Sans KR\',sans-serif;padding:1rem;text-align:center;color:#f3f5fa;';
+      loadingDiv.innerHTML = '<div style="width:50px;height:50px;border:4px solid #262c3a;border-top:4px solid #ff2d95;border-radius:50%;animation:spin 1s linear infinite;"></div><p style="margin-top:1.5rem;font-size:1.05rem;font-weight:700;">결제 처리 중이에요</p><p style="margin-top:0.5rem;font-size:0.85rem;color:#9aa3b5;line-height:1.6;">페이지를 닫거나 새로고침하지 마세요.</p><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+      document.body.appendChild(loadingDiv);
+
+      history.replaceState({}, '', window.location.pathname);
+
+      fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          loadingDiv.remove();
+          if (data.success) {
+            trackPurchase();
+            document.getElementById('done').classList.add('active');
+          } else {
+            alert('오류가 발생했습니다: ' + (data.error || data.message || '다시 시도해주세요'));
+          }
+        })
+        .catch(function () {
+          loadingDiv.remove();
+          alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
+        });
+    }
+  } catch (e) {
+    console.error('결제 복귀 처리 중 오류:', e);
+    alert('결제 확인 처리 중 오류가 발생했습니다. 카카오톡 채널로 문의해주세요.');
+  }
+})();
+
+function openSheet() {
+  document.getElementById('sheet-bg').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() {
+  document.getElementById('sheet-bg').classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.getElementById('sheet-bg').addEventListener('click', function (e) {
+  if (e.target === this) closeSheet();
+});
+
+function requestBilling() {
+  var name = document.getElementById('pay-name').value.trim();
+  var phone = document.getElementById('pay-phone').value.trim();
+  var email = document.getElementById('pay-email').value.trim();
+
+  if (!name) { alert('이름을 입력해주세요.'); return; }
+  if (!phone || !/^01[0-9]{1}[-]?[0-9]{3,4}[-]?[0-9]{4}$/.test(phone.replace(/-/g, ''))) {
+    alert('올바른 휴대폰 번호를 입력해주세요.\n예) 010-1234-5678'); return;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('올바른 이메일 주소를 입력해주세요.\n예) example@email.com'); return;
+  }
+  if (!document.getElementById('pay-agree').checked) {
+    alert('정기결제 내용에 동의해주세요.'); return;
+  }
+
+  var btn = document.getElementById('pay-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+
+  var customerKey = 'cust-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  var tossPayments = TossPayments(CLIENT_KEY);
+
+  try {
+    sessionStorage.setItem('pendingBilling', JSON.stringify({
+      plan: PLAN.name, name: name, phone: phone, email: email, customerKey: customerKey
+    }));
+  } catch (e) {}
+
+  var base = window.location.href.split('?')[0];
+  tossPayments.requestBillingAuth('카드', {
+    customerKey: customerKey,
+    successUrl: base + '?plan=' + encodeURIComponent(PLAN.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey),
+    failUrl: base + '?fail=1',
+    customerName: name,
+    customerEmail: email,
+    customerMobilePhone: phone.replace(/-/g, '')
+  }).catch(function (e) {
+    console.error(e);
+    if (e.code !== 'USER_CANCEL') alert('결제 요청 중 오류가 발생했습니다: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '카드 등록하고 시작하기 →';
+  });
+}
+
+// 히어로 버튼이 화면 밖으로 나가면 하단 고정 버튼 표시
+(function () {
+  var sticky = document.getElementById('sticky');
+  var hero = document.getElementById('hero-cta');
+  if (!('IntersectionObserver' in window)) { sticky.classList.add('show'); return; }
+  new IntersectionObserver(function (entries) {
+    sticky.classList.toggle('show', !entries[0].isIntersecting);
+  }).observe(hero);
+})();
+</script>
+</body>
+</html>
