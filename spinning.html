@@ -127,23 +127,66 @@
   .done h2 { font-size: 1.6rem; font-weight: 900; margin: 12px 0 8px; }
   .done p { color: var(--muted); font-size: 0.92rem; }
   .done .cta { margin-top: 24px; text-decoration: none; }
-  /* PC 화면 */
+  /* PC 화면: 큼직한 섹션을 위아래로 스크롤 */
   @media (min-width: 900px) {
-    body { padding-bottom: 40px; }
-    .wrap { max-width: 1120px; padding: 0 40px; }
-    .top { padding: 24px 0; }
-    .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 64px; align-items: center; padding: 72px 0 56px; }
-    .hero h1 { font-size: 3.8rem; letter-spacing: -2.5px; }
-    .hero p.sub { font-size: 1.15rem; margin-top: 20px; }
-    .when { font-size: 1rem; margin-top: 18px; }
-    .offer { margin-top: 0; padding: 32px 30px; }
-    .glow.a { width: 480px; height: 480px; top: -120px; right: -60px; }
-    .glow.b { width: 420px; height: 420px; top: 120px; left: -160px; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-    section.blk { padding-top: 56px; }
-    .blk h2 { font-size: 1.6rem; }
-    .tt td { height: 52px; }
-    .sticky .inner { max-width: 1120px; }
+    body { padding-bottom: 110px; }
+    .wrap { max-width: 1080px; padding: 0 48px; }
+    .top { padding: 28px 0; }
+    .logo { font-size: 1.5rem; }
+
+    .hero { min-height: min(calc(100vh - 100px), 860px); display: flex; flex-direction: column; justify-content: center; padding: 40px 0 80px; }
+    .tag { font-size: 0.95rem; padding: 6px 16px; margin-bottom: 28px; }
+    .hero h1 { font-size: 6.4rem; letter-spacing: -4px; line-height: 1.08; }
+    .hero p.sub { font-size: 1.4rem; margin-top: 28px; }
+    .when { font-size: 1.2rem; margin-top: 22px; }
+    .glow.a { width: 640px; height: 640px; top: -160px; right: -200px; }
+    .glow.b { width: 560px; height: 560px; top: 260px; left: -260px; }
+
+    .offer { margin-top: 48px; padding: 36px 40px; display: grid; grid-template-columns: 1fr 340px; column-gap: 40px; align-items: center; }
+    .offer > * { grid-column: 1; }
+    .offer .cta, .offer .cta-note { grid-column: 2; }
+    .offer .cta { grid-row: 1 / span 3; align-self: end; margin-top: 0; padding: 22px; font-size: 1.25rem; }
+    .offer .cta-note { grid-row: 4; margin-top: 8px; }
+    .offer-label { font-size: 0.95rem; }
+    .offer-price { font-size: 3rem; }
+    .offer-incl { font-size: 1.05rem; }
+    .chip { font-size: 0.85rem; padding: 6px 12px; }
+
+    .grid2 { display: block; }
+    section.blk { padding: 120px 0 0; }
+    .blk h2 { font-size: 3.2rem; letter-spacing: -1.5px; margin-bottom: 40px; }
+
+    .tt { border-spacing: 10px; margin: 0 -10px; }
+    .tt th { font-size: 1.1rem; }
+    .tt th.t { width: 16%; }
+    .tt td { height: 84px; border-radius: 16px; }
+    .tt td.time { font-size: 1.4rem; }
+    .tt td.on { font-size: 1.4rem; }
+    .tt .part { font-size: 0.9rem; }
+    .tt-note { font-size: 1rem; margin-top: 20px; }
+
+    .why { grid-template-columns: 1fr 1fr; gap: 20px; }
+    .why-item { padding: 36px 32px; border-radius: 20px; }
+    .why-item b { font-size: 1.4rem; margin-bottom: 8px; }
+    .why-item span { font-size: 1.05rem; }
+
+    .steps { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .steps li { flex-direction: column; gap: 16px; font-size: 1.15rem; font-weight: 700; }
+    .steps li::before { flex: 0 0 auto; width: 52px; height: 52px; font-size: 1.3rem; }
+    .steps li span { font-size: 0.95rem; font-weight: 400; margin-top: 6px; }
+
+    .faq details { padding: 24px 0; }
+    .faq summary { font-size: 1.2rem; }
+    .faq p { font-size: 1rem; }
+
+    footer { margin-top: 120px; font-size: 0.85rem; }
+
+    .sticky { padding: 16px 48px; }
+    .sticky .inner { max-width: 1080px; }
+    .sticky .p { font-size: 0.95rem; }
+    .sticky .p b { font-size: 1.3rem; }
+    .sticky .cta { padding: 16px 36px; font-size: 1.1rem; }
+
     .sheet-bg { align-items: center; }
     .sheet { border-radius: 18px; max-width: 460px; }
   }
