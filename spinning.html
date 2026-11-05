@@ -83,13 +83,14 @@
   .tt .part { font-size: 0.7rem; color: var(--pink); font-weight: 700; display: block; }
   .tt-note { margin-top: 12px; font-size: 0.8rem; color: var(--muted); }
   .when { position: relative; display: flex; gap: 8px; margin-top: 20px; }
-  .slot { flex: 1; border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 14px; padding: 12px 14px; }
+  .slot { flex: 0.82; border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 14px; padding: 12px 14px; font-family: inherit; color: var(--text); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: flex 0.25s, border-color 0.25s, background 0.25s, box-shadow 0.25s; }
+  .slot:hover { border-color: rgba(255,45,149,0.35); }
   .slot .lbl { display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.2px; }
   .slot .times { display: flex; gap: 10px; margin-top: 4px; font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
-  .slot.main { border-color: rgba(255,45,149,0.55); background: linear-gradient(135deg, rgba(255,45,149,0.16), rgba(123,92,255,0.12)); }
-  .slot.main .lbl { color: var(--pink); }
-  .slot.sub { flex: 0.82; }
-  .slot.sub .times { color: var(--muted); font-size: 1.1rem; margin-top: 7px; }
+  .slot .times { color: var(--muted); font-size: 1.1rem; margin-top: 7px; transition: font-size 0.25s, color 0.25s; }
+  .slot.on { flex: 1; border-color: rgba(255,45,149,0.55); background: linear-gradient(135deg, rgba(255,45,149,0.16), rgba(123,92,255,0.12)); box-shadow: 0 0 24px rgba(255,45,149,0.18); }
+  .slot.on .lbl { color: var(--pink); }
+  .slot.on .times { color: var(--text); font-size: 1.35rem; margin-top: 4px; }
 
   .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
   .faq summary { font-weight: 700; font-size: 0.93rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
@@ -147,8 +148,8 @@
     .when { margin-top: 24px; max-width: 560px; gap: 12px; }
     .slot { padding: 16px 20px; border-radius: 16px; }
     .slot .lbl { font-size: 0.85rem; }
-    .slot .times { font-size: 2rem; gap: 14px; }
-    .slot.sub .times { font-size: 1.5rem; margin-top: 10px; }
+    .slot .times { font-size: 1.5rem; gap: 14px; margin-top: 10px; }
+    .slot.on .times { font-size: 2rem; margin-top: 4px; }
     .glow.a { width: 640px; height: 640px; top: -160px; right: -200px; }
     .glow.b { width: 560px; height: 560px; top: 260px; left: -260px; }
 
@@ -231,12 +232,12 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
   <section class="hero">
     <div class="glow a"></div><div class="glow b"></div>
     <div class="hero-copy">
-    <div class="tag">삼송 · 신원동 저녁 스피닝</div>
+    <div class="tag">삼송 · 신원동 유일한 스피닝</div>
     <h1>불 끄고, 음악 켜고,<br><em>페달.</em></h1>
     <p class="sub">운동 안 하던 사람도 괜찮아요.<br>한 달 동안 마음껏 타보고 결정하세요.</p>
     <div class="when">
-      <div class="slot main"><span class="lbl">퇴근 후 · 월–목</span><span class="times"><span>19:30</span><span>20:30</span></span></div>
-      <div class="slot sub"><span class="lbl">오전 · 월–금</span><span class="times"><span>09:30</span><span>10:30</span></span></div>
+      <button type="button" class="slot on" aria-pressed="true"><span class="lbl">퇴근 후 · 월–목</span><span class="times"><span>19:30</span><span>20:30</span></span></button>
+      <button type="button" class="slot" aria-pressed="false"><span class="lbl">오전 · 월–금</span><span class="times"><span>09:30</span><span>10:30</span></span></button>
     </div>
     </div>
 
@@ -494,6 +495,16 @@ function requestBilling() {
     btn.textContent = '카드 등록하고 시작하기 →';
   });
 }
+
+// 시간대 카드: 누른 쪽에 불 들어오게
+document.querySelectorAll('.when .slot').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.when .slot').forEach(function (b) {
+      b.classList.toggle('on', b === btn);
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+  });
+});
 
 // 히어로 버튼이 화면 밖으로 나가면 하단 고정 버튼 표시
 (function () {
