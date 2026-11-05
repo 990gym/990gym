@@ -127,6 +127,26 @@
   .done h2 { font-size: 1.6rem; font-weight: 900; margin: 12px 0 8px; }
   .done p { color: var(--muted); font-size: 0.92rem; }
   .done .cta { margin-top: 24px; text-decoration: none; }
+  /* PC 화면 */
+  @media (min-width: 900px) {
+    body { padding-bottom: 40px; }
+    .wrap { max-width: 1120px; padding: 0 40px; }
+    .top { padding: 24px 0; }
+    .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 64px; align-items: center; padding: 72px 0 56px; }
+    .hero h1 { font-size: 3.8rem; letter-spacing: -2.5px; }
+    .hero p.sub { font-size: 1.15rem; margin-top: 20px; }
+    .when { font-size: 1rem; margin-top: 18px; }
+    .offer { margin-top: 0; padding: 32px 30px; }
+    .glow.a { width: 480px; height: 480px; top: -120px; right: -60px; }
+    .glow.b { width: 420px; height: 420px; top: 120px; left: -160px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+    section.blk { padding-top: 56px; }
+    .blk h2 { font-size: 1.6rem; }
+    .tt td { height: 52px; }
+    .sticky .inner { max-width: 1120px; }
+    .sheet-bg { align-items: center; }
+    .sheet { border-radius: 18px; max-width: 460px; }
+  }
 </style>
 </head>
 <body>
@@ -140,10 +160,12 @@
   <!-- 히어로: 들어오자마자 가격과 결제 버튼이 보이게 -->
   <section class="hero">
     <div class="glow a"></div><div class="glow b"></div>
+    <div class="hero-copy">
     <div class="tag">삼송 · 신원동 저녁 스피닝</div>
     <h1>불 끄고, 음악 켜고,<br><em>페달.</em></h1>
     <p class="sub">운동 안 하던 사람도 괜찮아요.<br>한 달 동안 마음껏 타보고 결정하세요.</p>
     <p class="when">퇴근 후 <b>저녁 7:30 · 8:30</b> (월~목)<br><span style="color:var(--muted);font-weight:500">오전 9:30 · 10:30 (월~금)</span></p>
+    </div>
 
     <div class="offer">
       <div class="offer-label">첫 달 시작하기 · 프리미엄</div>
@@ -159,6 +181,7 @@
     </div>
   </section>
 
+  <div class="grid2">
   <section class="blk">
     <h2>스피닝 시간표</h2>
     <table class="tt">
@@ -186,6 +209,9 @@
     </div>
   </section>
 
+  </div>
+
+  <div class="grid2">
   <section class="blk">
     <h2>이렇게 시작해요</h2>
     <ol class="steps">
@@ -205,6 +231,8 @@
     <details><summary>운영 시간은요?</summary><p>평일 06:00-23:30, 주말·공휴일 09:00-20:00 (2·4째주 일요일 휴관). 스피닝은 평일 오전 9:30·10:30(월~금), 저녁 7:30·8:30(월~목)이에요.</p></details>
     <details><summary>어디에 있나요?</summary><p>경기도 고양시 덕양구 권율대로 900, 7층 (신원동, 삼송S프라자)</p></details>
   </section>
+
+  </div>
 
   <footer>
     <p><b>990짐</b> | 대표자: 노준석 | 사업자등록번호: 177-12-02806</p>
