@@ -82,8 +82,14 @@
   .tt tr.sep td { height: 10px; background: none; border: none; }
   .tt .part { font-size: 0.7rem; color: var(--pink); font-weight: 700; display: block; }
   .tt-note { margin-top: 12px; font-size: 0.8rem; color: var(--muted); }
-  .when { position: relative; margin-top: 12px; font-size: 0.85rem; font-weight: 700; }
-  .when b { color: var(--pink); }
+  .when { position: relative; display: flex; gap: 8px; margin-top: 20px; }
+  .slot { flex: 1; border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 14px; padding: 12px 14px; }
+  .slot .lbl { display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.2px; }
+  .slot .times { display: flex; gap: 10px; margin-top: 4px; font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+  .slot.main { border-color: rgba(255,45,149,0.55); background: linear-gradient(135deg, rgba(255,45,149,0.16), rgba(123,92,255,0.12)); }
+  .slot.main .lbl { color: var(--pink); }
+  .slot.sub { flex: 0.82; }
+  .slot.sub .times { color: var(--muted); font-size: 1.1rem; margin-top: 7px; }
 
   .faq details { border-bottom: 1px solid var(--line); padding: 14px 0; }
   .faq summary { font-weight: 700; font-size: 0.93rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
@@ -134,15 +140,19 @@
     .top { padding: 28px 0; }
     .logo { font-size: 1.5rem; }
 
-    .hero { min-height: min(calc(100vh - 100px), 860px); display: flex; flex-direction: column; justify-content: center; padding: 40px 0 80px; }
-    .tag { font-size: 0.95rem; padding: 6px 16px; margin-bottom: 28px; }
-    .hero h1 { font-size: 6.4rem; letter-spacing: -4px; line-height: 1.08; }
-    .hero p.sub { font-size: 1.4rem; margin-top: 28px; }
-    .when { font-size: 1.2rem; margin-top: 22px; }
+    .hero { min-height: min(calc(100vh - 100px), 860px); display: flex; flex-direction: column; justify-content: center; padding: 16px 0 72px; }
+    .tag { font-size: 0.95rem; padding: 6px 16px; margin-bottom: 20px; }
+    .hero h1 { font-size: 5.4rem; letter-spacing: -4px; line-height: 1.08; }
+    .hero p.sub { font-size: 1.3rem; margin-top: 20px; }
+    .when { margin-top: 24px; max-width: 560px; gap: 12px; }
+    .slot { padding: 16px 20px; border-radius: 16px; }
+    .slot .lbl { font-size: 0.85rem; }
+    .slot .times { font-size: 2rem; gap: 14px; }
+    .slot.sub .times { font-size: 1.5rem; margin-top: 10px; }
     .glow.a { width: 640px; height: 640px; top: -160px; right: -200px; }
     .glow.b { width: 560px; height: 560px; top: 260px; left: -260px; }
 
-    .offer { margin-top: 48px; padding: 36px 40px; display: grid; grid-template-columns: 1fr 340px; column-gap: 40px; align-items: center; }
+    .offer { margin-top: 32px; padding: 36px 40px; display: grid; grid-template-columns: 1fr 340px; column-gap: 40px; align-items: center; }
     .offer > * { grid-column: 1; }
     .offer .cta, .offer .cta-note { grid-column: 2; }
     .offer .cta { grid-row: 1 / span 3; align-self: end; margin-top: 0; padding: 22px; font-size: 1.25rem; }
@@ -224,7 +234,10 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
     <div class="tag">삼송 · 신원동 저녁 스피닝</div>
     <h1>불 끄고, 음악 켜고,<br><em>페달.</em></h1>
     <p class="sub">운동 안 하던 사람도 괜찮아요.<br>한 달 동안 마음껏 타보고 결정하세요.</p>
-    <p class="when">퇴근 후 <b>저녁 7:30 · 8:30</b> (월~목)<br><span style="color:var(--muted);font-weight:500">오전 9:30 · 10:30 (월~금)</span></p>
+    <div class="when">
+      <div class="slot main"><span class="lbl">퇴근 후 · 월–목</span><span class="times"><span>19:30</span><span>20:30</span></span></div>
+      <div class="slot sub"><span class="lbl">오전 · 월–금</span><span class="times"><span>09:30</span><span>10:30</span></span></div>
+    </div>
     </div>
 
     <div class="offer">
