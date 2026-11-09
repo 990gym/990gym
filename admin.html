@@ -50,7 +50,7 @@
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
   .main { padding: 32px clamp(12px, 2.5vw, 32px); margin: 0 auto; }
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px; }
   .stat-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid var(--border); }
   .stat-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; }
   .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
@@ -139,6 +139,7 @@
   @media (max-width: 1024px) { .col-join { display: none; } }
   @media (max-width: 900px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat-card.stat-revenue { grid-column: 1 / -1; }
     .main { padding: 16px 12px; }
     .header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
     .header-right { flex-wrap: wrap; gap: 8px; }
@@ -201,6 +202,11 @@
         <div class="stat-sub">누적</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">결제실패</div>
+        <div class="stat-value" id="stat-failed" style="color:var(--orange)">-</div>
+        <div class="stat-sub">현재 · 카드 확인 필요</div>
+      </div>
+      <div class="stat-card stat-revenue">
         <div class="stat-label">이번달 예상 매출</div>
         <div class="stat-value" id="stat-revenue">-</div>
         <div class="stat-sub">원</div>
@@ -403,6 +409,7 @@ function renderStats() {
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-cancelled').textContent = cancelled;
+  document.getElementById('stat-failed').textContent = subscribers.filter(s => s.status === 'payment_failed').length;
   document.getElementById('stat-revenue').textContent = revenue.toLocaleString();
 }
 
