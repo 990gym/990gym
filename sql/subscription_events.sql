@@ -12,6 +12,11 @@
 
 begin;
 
+-- 0) 어드민이 쓰는데 DB에 없던 칸 추가 ---------------------------------
+--    (해지일 칸이 없어서, 해지 팝업에서 고른 이탈 사유도 함께 저장이 안 되고 있었음)
+alter table public.subscribers add column if not exists cancelled_at timestamptz;
+alter table public.subscribers add column if not exists churn_reason text;
+
 -- 1) 이력 테이블 ------------------------------------------------------
 create table if not exists public.subscription_events (
   id            bigserial primary key,
