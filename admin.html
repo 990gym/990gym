@@ -40,6 +40,12 @@
   .header-link:hover { background: rgba(255,255,255,0.2); }
   .header-link.highlight { background: var(--purple); }
   .header-link.highlight:hover { background: #7c3aed; }
+  .header-link.alert-on { background: #16a34a; }
+  .header-link.alert-off { background: #b91c1c; }
+  .signup-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2000; background: #111827; color: white; padding: 14px 18px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 14px; font-size: 15px; max-width: calc(100vw - 32px); }
+  .signup-toast.show { display: flex; }
+  .signup-toast b { color: #4ade80; }
+  .signup-toast button { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-family: inherit; font-size: 13px; flex-shrink: 0; }
   .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
   .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); }
@@ -144,6 +150,7 @@
   <div class="header">
     <div class="header-logo">990짐 관리자</div>
     <div class="header-right">
+      <button class="header-link" id="signup-alert-btn" onclick="enableSignupAlerts()" title="새 구독자가 결제를 마치면 이 컴퓨터에 알림을 띄웁니다">🔔 신규 알림 켜기</button>
       <span class="session-timer" id="session-timer"></span>
       <a href="inquiry.html" class="header-link highlight">📋 상담 신청 <span id="inquiry-count"></span></a>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -731,6 +738,153 @@ async function confirmBillingChange() {
     closeBillingModal();
   }
 }
+
+// ===== 신규 구독 알림 =====
+// 이 페이지가 열려 있으면 1분마다 구독자 목록을 확인해서, 새로 첫 결제를 마친 회원이 생기면
+// ① 화면 위 배너 ② 컴퓨터 알림(Windows 오른쪽 아래) ③ 알림음 ④ 탭 제목 "(1)" 으로 알려준다.
+// 자동 로그아웃된 뒤에도 탭만 열려 있으면 계속 확인한다 (이때는 이름 없이 "신규 1명"으로만 표시).
+const SIGNUP_POLL_MS = 60 * 1000;
+const SIGNUP_SEEN_KEY = 'admin_signup_seen_at';
+const SIGNUP_ALERT_KEY = 'admin_signup_alert_on';
+const BASE_TITLE = document.title;
+let signupSeenAt = null;
+let unseenSignupCount = 0;
+let alertAudioCtx = null;
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function isLoggedIn() { return document.getElementById('admin-screen').style.display === 'block'; }
+
+function renderSignupAlertBtn() {
+  const btn = document.getElementById('signup-alert-btn');
+  if (!btn) return;
+  btn.classList.remove('alert-on', 'alert-off');
+  if (!('Notification' in window)) {
+    btn.textContent = '🔔 화면 알림만 가능';
+    btn.title = '이 브라우저는 컴퓨터 알림을 지원하지 않아 화면 배너와 소리로만 알려드립니다';
+    return;
+  }
+  if (Notification.permission === 'granted' && lsGet(SIGNUP_ALERT_KEY) === '1') {
+    btn.textContent = '🔔 신규 알림 켜짐';
+    btn.classList.add('alert-on');
+    btn.title = '이 컴퓨터에서 새 구독 알림을 받고 있어요. 다시 누르면 시험 알림이 떠요.';
+  } else if (Notification.permission === 'denied') {
+    btn.textContent = '🔕 알림 차단됨';
+    btn.classList.add('alert-off');
+    btn.title = '주소창 왼쪽 자물쇠 아이콘 → 알림 → 허용으로 바꾼 뒤 새로고침하세요';
+  } else {
+    btn.textContent = '🔔 신규 알림 켜기';
+  }
+}
+
+async function enableSignupAlerts() {
+  // 소리는 사용자가 한 번 클릭해야 재생이 허용되므로 여기서 준비
+  try {
+    alertAudioCtx = alertAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    await alertAudioCtx.resume();
+  } catch (e) {}
+  if (!('Notification' in window)) { lsSet(SIGNUP_ALERT_KEY, '1'); playSignupSound(); renderSignupAlertBtn(); return; }
+  if (Notification.permission === 'denied') {
+    alert('알림이 차단돼 있어요.\n주소창 왼쪽 자물쇠 아이콘 → 알림 → "허용"으로 바꾼 뒤 새로고침해 주세요.');
+    return;
+  }
+  const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (perm === 'granted') {
+    lsSet(SIGNUP_ALERT_KEY, '1');
+    showDesktopNotice('신규 알림이 켜졌어요', '새 구독자가 결제를 마치면 이렇게 알려드릴게요.');
+    playSignupSound();
+  }
+  renderSignupAlertBtn();
+}
+
+function playSignupSound() {
+  try {
+    const ctx = alertAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    alertAudioCtx = ctx;
+    [[880, 0], [1320, 0.18]].forEach(([freq, at]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + at);
+      g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.35);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + at); o.stop(ctx.currentTime + at + 0.4);
+    });
+  } catch (e) {}
+}
+
+function showDesktopNotice(title, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const n = new Notification(title, { body, tag: 'signup-' + Date.now(), requireInteraction: true });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch (e) {}
+}
+
+function showSignupToast(text) {
+  let el = document.getElementById('signup-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'signup-toast';
+    el.className = 'signup-toast';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span>${text}</span><button type="button" onclick="dismissSignupToast()">확인</button>`;
+  el.classList.add('show');
+}
+function dismissSignupToast() {
+  const el = document.getElementById('signup-toast');
+  if (el) el.classList.remove('show');
+  unseenSignupCount = 0;
+  document.title = BASE_TITLE;
+}
+window.addEventListener('focus', () => { if (unseenSignupCount && !document.getElementById('signup-toast')?.classList.contains('show')) dismissSignupToast(); });
+
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+async function checkNewSignups() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,plan,status,created_at&order=created_at.desc&limit=30`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+    const t = (r) => Date.parse(r.created_at) || 0;
+    const newest = Math.max(...rows.map(t));
+
+    if (signupSeenAt === null) {
+      const saved = parseInt(lsGet(SIGNUP_SEEN_KEY), 10);
+      // 처음 켠 컴퓨터는 지금까지의 가입을 '이미 본 것'으로 시작 (옛날 가입으로 알림 폭탄 방지)
+      signupSeenAt = Number.isFinite(saved) ? saved : newest;
+    }
+    const fresh = rows.filter(r => t(r) > signupSeenAt && r.status === 'active').sort((a, b) => t(a) - t(b));
+    signupSeenAt = Math.max(signupSeenAt, newest);
+    lsSet(SIGNUP_SEEN_KEY, String(signupSeenAt));
+    if (!fresh.length) return;
+
+    unseenSignupCount += fresh.length;
+    document.title = `(${unseenSignupCount}) 신규 구독 · ${BASE_TITLE}`;
+    const loggedIn = isLoggedIn();
+    const label = (r) => `${r.name} · ${r.plan}`;
+    const summary = loggedIn
+      ? (fresh.length === 1 ? label(fresh[0]) : `${label(fresh[0])} 외 ${fresh.length - 1}명`)
+      : `${fresh.length}명 (로그인해서 확인하세요)`;
+
+    showSignupToast(loggedIn
+      ? `🎉 신규 구독 <b>${escHtml(summary)}</b>`
+      : `🎉 신규 구독 <b>${fresh.length}명</b> — 로그인해서 확인하세요`);
+    if (lsGet(SIGNUP_ALERT_KEY) === '1') {
+      showDesktopNotice('🎉 990짐 신규 구독', summary);
+      playSignupSound();
+    }
+    if (loggedIn) loadSubscribers();
+  } catch (e) {}
+}
+
+renderSignupAlertBtn();
+checkNewSignups();
+setInterval(checkNewSignups, SIGNUP_POLL_MS);
 </script>
 </body>
 </html>
