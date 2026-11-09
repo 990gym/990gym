@@ -205,52 +205,54 @@ SQL_TEMPLATE = r"""-- ==========================================================
 -- · 오늘 이후 자동으로 쌓인 기록(live)은 건드리지 않습니다.
 -- =====================================================================
 
-begin;
+-- 작업용 임시 공간 (외부 API에 노출되지 않는 별도 스키마, 마지막에 삭제)
+drop schema if exists toss_restore cascade;
+create schema toss_restore;
 
-create or replace function pg_temp.mask_name(n text) returns text language sql immutable as $$
+create or replace function toss_restore.mask_name(n text) returns text language sql immutable as $$
   select case when n is null then null
               when char_length(btrim(n)) <= 1 then btrim(n)
               when char_length(btrim(n)) = 2 then left(btrim(n), 1) || '*'
               else left(btrim(n), 1) || repeat('*', char_length(btrim(n)) - 2) || right(btrim(n), 1) end $$;
-create or replace function pg_temp.mask_email(e text) returns text language sql immutable as $$
+create or replace function toss_restore.mask_email(e text) returns text language sql immutable as $$
   select case when e is null or position('@' in e) = 0 then null
               else lower(left(split_part(btrim(e), '@', 1), 2)
                          || repeat('*', greatest(char_length(split_part(btrim(e), '@', 1)) - 2, 0))
                          || '@' || split_part(btrim(e), '@', 2)) end $$;
 
-create temp table toss_ev (
+create table toss_restore.ev (
   subscriber_id text, name_mask text, email_mask text,
   event_type text, occurred_at timestamptz, plan text, from_plan text, note text
-) on commit drop;
-insert into toss_ev values
+);
+insert into toss_restore.ev values
 {ev_values};
 
-create temp table toss_end (
+create table toss_restore.ends (
   subscriber_id text, name_mask text, email_mask text,
   stream_active boolean, last_pay timestamptz, end_at timestamptz, end_note text
-) on commit drop;
-insert into toss_end values
+);
+insert into toss_restore.ends values
 {end_values};
 
 -- 자동결제 기록이 없는 회원: 이름·이메일 마스킹이 정확히 한 명과 맞을 때만 연결
-create temp table mask_map on commit drop as
+create table toss_restore.mask_map as
 select k.name_mask, k.email_mask, min(s.id::text) as sid, count(*) as n
-from (select distinct name_mask, email_mask from toss_ev where subscriber_id is null) k
+from (select distinct name_mask, email_mask from toss_restore.ev where subscriber_id is null) k
 join public.subscribers s
-  on pg_temp.mask_name(s.name) = k.name_mask and pg_temp.mask_email(s.email) = k.email_mask
+  on toss_restore.mask_name(s.name) = k.name_mask and toss_restore.mask_email(s.email) = k.email_mask
 group by 1, 2;
 
-update toss_ev t set subscriber_id = m.sid from mask_map m
+update toss_restore.ev t set subscriber_id = m.sid from toss_restore.mask_map m
  where t.subscriber_id is null and m.n = 1 and t.name_mask = m.name_mask and t.email_mask = m.email_mask;
-update toss_end t set subscriber_id = m.sid from mask_map m
+update toss_restore.ends t set subscriber_id = m.sid from toss_restore.mask_map m
  where t.subscriber_id is null and m.n = 1 and t.name_mask = m.name_mask and t.email_mask = m.email_mask;
 
 -- DB에 없는 회원(테스트 결제 등)은 버림
-delete from toss_ev  where subscriber_id is null or subscriber_id not in (select id::text from public.subscribers);
-delete from toss_end where subscriber_id is null or subscriber_id not in (select id::text from public.subscribers);
+delete from toss_restore.ev  where subscriber_id is null or subscriber_id not in (select id::text from public.subscribers);
+delete from toss_restore.ends where subscriber_id is null or subscriber_id not in (select id::text from public.subscribers);
 
 -- 첫 결제를 못 찾은 회원의 가입일은 DB 가입일 사용 (자동결제 이전일 때만, 아니면 첫 자동결제 한 달 전으로 추정)
-update toss_ev t
+update toss_restore.ev t
    set occurred_at = case when s.created_at < t.occurred_at then s.created_at
                           else t.occurred_at - interval '1 month' end,
        note = case when s.created_at < t.occurred_at then null else '가입일 추정' end
@@ -260,11 +262,11 @@ update toss_ev t
 -- 이전에 넣은 임시 복원분 교체
 delete from public.subscription_events
  where source in ('backfill', 'toss')
-   and subscriber_id in (select distinct subscriber_id from toss_ev);
+   and subscriber_id in (select distinct subscriber_id from toss_restore.ev);
 
 insert into public.subscription_events (subscriber_id, event_type, occurred_at, plan, from_plan, note, source)
 select t.subscriber_id, t.event_type, t.occurred_at, t.plan, t.from_plan, t.note, 'toss'
-  from toss_ev t
+  from toss_restore.ev t
  where t.occurred_at < coalesce((select min(e.occurred_at) from public.subscription_events e
                                   where e.subscriber_id = t.subscriber_id and e.source = 'live'), now());
 
@@ -276,7 +278,7 @@ select s.id::text, 'cancel',
        case when s.cancelled_at is null then te.end_note end,
        'toss'
   from public.subscribers s
-  join toss_end te on te.subscriber_id = s.id::text
+  join toss_restore.ends te on te.subscriber_id = s.id::text
  where s.status = 'cancelled' and te.stream_active
    and not exists (select 1 from public.subscription_events e
                     where e.subscriber_id = s.id::text and e.event_type = 'cancel' and e.occurred_at > te.last_pay);
@@ -290,13 +292,13 @@ update public.subscription_events e set reason = s.churn_reason
                 where x.subscriber_id = s.id::text and x.event_type = 'cancel'
                 order by occurred_at desc, id desc limit 1);
 
+drop schema toss_restore cascade;
+
 -- 결과 요약
 select (select count(distinct subscriber_id) from public.subscription_events where source = 'toss') as "복원된 회원 수",
        (select count(*) from public.subscription_events where source = 'toss') as "복원된 기록 수",
        (select count(*) from public.subscribers s where not exists
           (select 1 from public.subscription_events e where e.subscriber_id = s.id::text and e.source = 'toss')) as "결제내역에 없어 기존 기록 유지";
-
-commit;
 """
 
 if __name__ == '__main__':
