@@ -106,6 +106,33 @@
   .churn-input:focus { border-color: var(--blue); }
   .churn-inline { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: white; width: 100%; min-width: 96px; max-width: 170px; text-overflow: ellipsis; cursor: pointer; }
   .churn-inline:focus { border-color: var(--blue); outline: none; }
+  /* ===== 회원 이력 ===== */
+  .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: #c7d2e8; text-underline-offset: 3px; }
+  .name-link:hover { color: var(--blue); text-decoration-color: var(--blue); }
+  .badge-failed { background: #fef3c7; color: #b45309; }
+  .history-modal { width: 460px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; padding: 28px 28px 20px; }
+  .history-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .history-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--text-light); cursor: pointer; padding: 2px 4px; }
+  .history-meta { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+  .history-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0 6px; }
+  .history-summary div { background: var(--gray); border-radius: 10px; padding: 10px 12px; }
+  .history-summary b { display: block; font-size: 18px; color: var(--navy); }
+  .history-summary span { font-size: 12px; color: var(--text-light); }
+  .history-body { overflow-y: auto; margin: 10px -4px 0; padding: 4px; }
+  .timeline { list-style: none; position: relative; margin: 6px 0 4px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+  .tl-item { position: relative; padding: 0 0 18px 26px; }
+  .tl-item:last-child { padding-bottom: 4px; }
+  .tl-dot { position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 1px var(--border); }
+  .tl-signup .tl-dot, .tl-return .tl-dot { background: var(--green); }
+  .tl-cancel .tl-dot { background: var(--red); }
+  .tl-payment_failed .tl-dot { background: var(--orange); }
+  .tl-plan_change .tl-dot { background: var(--blue); }
+  .tl-date { font-size: 12px; color: var(--text-light); }
+  .tl-title { font-size: 15px; font-weight: 700; margin-top: 1px; }
+  .tl-detail { font-size: 13px; color: var(--text); margin-top: 2px; }
+  .tl-gap { font-size: 12px; color: var(--text-light); margin-top: 3px; }
+  .history-note { font-size: 12px; color: var(--text-light); background: var(--gray); border-radius: 8px; padding: 10px 12px; margin-top: 8px; line-height: 1.6; }
   /* 화면 폭에 맞춰 덜 중요한 칸부터 숨김 → 900px 이하는 카드형 */
   @media (max-width: 1280px) { .col-cancelled { display: none; } }
   @media (max-width: 1100px) { .col-email { display: none; } }
@@ -205,6 +232,20 @@
       <button class="modal-btn modal-btn-cancel" onclick="closeModal()">취소</button>
       <button class="modal-btn modal-btn-confirm" id="modal-confirm-btn" onclick="confirmAction()">확인</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="history-modal" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="modal history-modal">
+    <div class="history-head">
+      <div>
+        <div class="modal-title" id="history-title" style="margin-bottom:0"></div>
+        <div class="history-meta" id="history-meta"></div>
+      </div>
+      <button class="history-close" onclick="closeHistoryModal()" aria-label="닫기">×</button>
+    </div>
+    <div class="history-summary" id="history-summary"></div>
+    <div class="history-body" id="history-body"></div>
   </div>
 </div>
 
@@ -377,7 +418,9 @@ function renderTable() {
     const cancelledAt = s.cancelled_at ? new Date(s.cancelled_at).toLocaleDateString('ko-KR') : '-';
     const statusBadge = s.status === 'active'
       ? '<span class="badge badge-active">활성</span>'
-      : '<span class="badge badge-cancelled">해지</span>';
+      : s.status === 'payment_failed'
+        ? '<span class="badge badge-failed">결제실패</span>'
+        : '<span class="badge badge-cancelled">해지</span>';
     const actionBtns = s.status === 'active'
       ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
          <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
@@ -396,7 +439,7 @@ function renderTable() {
       churnCell = `<select class="churn-inline" onchange="onChurnInlineChange('${s.id}', this.value, this)">${opts}</select>`;
     }
     html += `<tr>
-      <td class="col-name" data-label="이름"><strong>${s.name||'-'}</strong></td>
+      <td class="col-name" data-label="이름"><button class="name-link" onclick="openHistory('${s.id}')" title="구독 이력 보기">${escHtml(s.name||'-')}</button></td>
       <td class="col-phone" data-label="연락처">${s.phone||'-'}</td>
       <td class="col-email" data-label="이메일">${s.email||'-'}</td>
       <td data-label="플랜">${s.plan||'-'}</td>
@@ -598,6 +641,135 @@ async function confirmPlanChange() {
     closePlanModal();
   }
 }
+
+// ===== 회원 구독 이력 =====
+// subscription_events 표(Supabase 트리거가 자동 기록)를 시간순으로 보여준다.
+// 표가 아직 없으면 subscribers 의 가입일/해지일만으로 간단히 보여준다.
+const EVENT_LABELS = {
+  signup: '가입', cancel: '해지', return: '복귀', payment_failed: '결제 실패', plan_change: '플랜 변경'
+};
+
+function fmtKstDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '-';
+  const p = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' }).formatToParts(d);
+  const g = t => (p.find(x => x.type === t) || {}).value;
+  return `${g('year')}. ${g('month')}. ${g('day')}. (${g('weekday')})`;
+}
+function kstYmd(iso) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date(iso)); }
+function daysBetween(a, b) { return diffDaysYmd(kstYmd(a), kstYmd(b)); }
+// 두 시점 사이를 달력 기준 "N개월 N일"로 (총 일수만 있을 땐 30일=1개월 근사)
+function fmtSpan(days, fromIso, toIso) {
+  if (days < 31 || !fromIso) {
+    if (days < 31) return `${days}일`;
+    const m = Math.floor(days / 30), d = days - m * 30;
+    return d ? `${m}개월 ${d}일` : `${m}개월`;
+  }
+  const a = kstYmd(fromIso), b = kstYmd(toIso);
+  const [ay, am, ad] = a.split('-').map(Number), [by, bm, bd] = b.split('-').map(Number);
+  let m = (by - ay) * 12 + (bm - am);
+  if (bd < ad) m--;
+  const anchor = new Date(Date.UTC(ay, am - 1 + m, 1));
+  const last = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0)).getUTCDate();
+  const d = diffDaysYmd(new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), Math.min(ad, last))).toISOString().slice(0, 10), b);
+  return d ? `${m}개월 ${d}일` : `${m}개월`;
+}
+const isUnknownDate = e => e.note === '해지일 미상';
+
+function fallbackEvents(s) {
+  const ev = [];
+  if (s.created_at) ev.push({ event_type: 'signup', occurred_at: s.created_at, plan: s.plan, source: 'backfill' });
+  if (s.status === 'cancelled') ev.push({ event_type: 'cancel', occurred_at: s.cancelled_at || s.created_at, plan: s.plan, reason: s.churn_reason, note: s.cancelled_at ? null : '해지일 미상', source: 'backfill' });
+  if (s.status === 'payment_failed') ev.push({ event_type: 'payment_failed', occurred_at: s.next_billing_date ? `${String(s.next_billing_date).slice(0,10)}T18:00:00+09:00` : s.created_at, plan: s.plan, source: 'backfill' });
+  return ev;
+}
+
+async function openHistory(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) return;
+  const statusTxt = s.status === 'active' ? '활성' : s.status === 'payment_failed' ? '결제실패' : '해지';
+  document.getElementById('history-title').textContent = `${s.name || '-'}님 구독 이력`;
+  document.getElementById('history-meta').textContent = `${s.phone || '-'} · 현재 ${s.plan || '-'} · ${statusTxt}`;
+  document.getElementById('history-summary').innerHTML = '';
+  document.getElementById('history-body').innerHTML = '<div class="loading" style="padding:32px">불러오는 중...</div>';
+  document.getElementById('history-modal').classList.add('active');
+
+  let events = null, tableMissing = false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscription_events?subscriber_id=eq.${encodeURIComponent(id)}&select=*&order=occurred_at.asc,id.asc`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (res.ok) events = await res.json();
+    else tableMissing = true;
+  } catch (e) { tableMissing = true; }
+  if (!Array.isArray(events) || !events.length) events = fallbackEvents(s);
+  renderHistory(s, events, tableMissing);
+}
+
+function renderHistory(s, events, tableMissing) {
+  // 이용 기간 / 쉰 기간 계산
+  let activeSince = null, lastStop = null, totalDays = 0;
+  let cancels = 0, returns = 0;
+  const items = events.map(e => {
+    let gap = '';
+    const t = e.occurred_at;
+    if (e.event_type === 'signup' || e.event_type === 'return') {
+      if (e.event_type === 'return') {
+        returns++;
+        if (lastStop && !isUnknownDate(lastStop)) {
+          const g = daysBetween(lastStop.occurred_at, t);
+          gap = g < 1 ? '중단 당일 바로 복귀' : `${fmtSpan(g, lastStop.occurred_at, t)} 쉬고 복귀`;
+        }
+      }
+      activeSince = t; lastStop = null;
+    } else if (e.event_type === 'cancel' || e.event_type === 'payment_failed') {
+      if (e.event_type === 'cancel') cancels++;
+      if (activeSince && !isUnknownDate(e)) {
+        const d = Math.max(0, daysBetween(activeSince, t));
+        totalDays += d;
+        const what = e.event_type === 'cancel' ? '해지' : '결제 중단';
+        gap = d < 1 ? `시작 당일 ${what}` : `${fmtSpan(d, activeSince, t)} 이용 후 ${what}`;
+      }
+      activeSince = null; lastStop = e;
+    }
+    let detail = '';
+    if (e.event_type === 'signup') detail = e.plan || '';
+    else if (e.event_type === 'return') detail = e.from_plan ? `${e.from_plan} → ${e.plan}` : (e.plan || '');
+    else if (e.event_type === 'plan_change') detail = `${e.from_plan || '?'} → ${e.plan || '?'}`;
+    else if (e.event_type === 'cancel') detail = `사유: ${e.reason || '미입력'}`;
+    else if (e.event_type === 'payment_failed') detail = '자동결제가 되지 않았어요 (잔액 부족·카드 만료 등)';
+    if (e.note && e.note !== '해지일 미상') detail += detail ? ` · ${e.note}` : e.note;
+    const date = isUnknownDate(e) ? '날짜 미상' : fmtKstDate(t);
+    return `<li class="tl-item tl-${escHtml(e.event_type)}">
+      <span class="tl-dot"></span>
+      <div class="tl-date">${date}</div>
+      <div class="tl-title">${EVENT_LABELS[e.event_type] || escHtml(e.event_type)}</div>
+      ${detail ? `<div class="tl-detail">${escHtml(detail)}</div>` : ''}
+      ${gap ? `<div class="tl-gap">${gap}</div>` : ''}
+    </li>`;
+  });
+  if (activeSince && s.status === 'active') totalDays += Math.max(0, daysBetween(activeSince, new Date().toISOString()));
+
+  document.getElementById('history-summary').innerHTML = `
+    <div><b>${totalDays ? `${totalDays}일` : '-'}</b><span>총 이용${totalDays >= 45 ? ` · 약 ${(totalDays / 30.44).toFixed(1)}개월` : ' 기간'}</span></div>
+    <div><b>${cancels}회</b><span>해지</span></div>
+    <div><b>${returns}회</b><span>복귀</span></div>`;
+
+  let note = '';
+  if (tableMissing) {
+    note = '이력 기록이 아직 켜져 있지 않아 가입일·해지일만 보여드려요. Supabase에서 sql/subscription_events.sql 을 한 번 실행하면 이후 모든 해지·복귀가 자동으로 쌓입니다.';
+  } else if (events.some(e => e.source === 'backfill')) {
+    note = '2026년 11월 이전 기록은 남아 있던 데이터로 복원한 것이라, 그 전에 해지했다가 복귀한 이력은 빠져 있을 수 있어요.';
+  }
+  document.getElementById('history-body').innerHTML =
+    (items.length ? `<ul class="timeline">${items.join('')}</ul>` : '<div class="empty" style="padding:32px">기록이 없습니다.</div>') +
+    (note ? `<div class="history-note">${note}</div>` : '');
+}
+
+function closeHistoryModal() {
+  document.getElementById('history-modal').classList.remove('active');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHistoryModal(); });
 
 // ===== 결제일 변경 =====
 // 날짜는 전부 'YYYY-MM-DD' 문자열로 다룬다 (시간대 때문에 하루 밀리는 것 방지).
