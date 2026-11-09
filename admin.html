@@ -675,6 +675,7 @@ function fmtSpan(days, fromIso, toIso) {
   return d ? `${m}개월 ${d}일` : `${m}개월`;
 }
 const isUnknownDate = e => e.note === '해지일 미상';
+const isEstimated = e => typeof e.note === 'string' && e.note.endsWith('추정');
 
 function fallbackEvents(s) {
   const ev = [];
@@ -738,8 +739,8 @@ function renderHistory(s, events, tableMissing) {
     else if (e.event_type === 'plan_change') detail = `${e.from_plan || '?'} → ${e.plan || '?'}`;
     else if (e.event_type === 'cancel') detail = `사유: ${e.reason || '미입력'}`;
     else if (e.event_type === 'payment_failed') detail = '자동결제가 되지 않았어요 (잔액 부족·카드 만료 등)';
-    if (e.note && e.note !== '해지일 미상') detail += detail ? ` · ${e.note}` : e.note;
-    const date = isUnknownDate(e) ? '날짜 미상' : fmtKstDate(t);
+    if (e.note && !isUnknownDate(e) && !isEstimated(e)) detail += detail ? ` · ${e.note}` : e.note;
+    const date = isUnknownDate(e) ? '날짜 미상' : fmtKstDate(t) + (isEstimated(e) ? ' 무렵' : '');
     return `<li class="tl-item tl-${escHtml(e.event_type)}">
       <span class="tl-dot"></span>
       <div class="tl-date">${date}</div>
@@ -758,6 +759,8 @@ function renderHistory(s, events, tableMissing) {
   let note = '';
   if (tableMissing) {
     note = '이력 기록이 아직 켜져 있지 않아 가입일·해지일만 보여드려요. Supabase에서 sql/subscription_events.sql 을 한 번 실행하면 이후 모든 해지·복귀가 자동으로 쌓입니다.';
+  } else if (events.some(e => e.source === 'toss')) {
+    note = '11월 9일 이전 기록은 토스 결제 내역으로 복원했어요. \'무렵\'이 붙은 해지일은 마지막 결제분이 끝나는 날로 추정한 날짜예요.';
   } else if (events.some(e => e.source === 'backfill')) {
     note = '2026년 11월 이전 기록은 남아 있던 데이터로 복원한 것이라, 그 전에 해지했다가 복귀한 이력은 빠져 있을 수 있어요.';
   }
