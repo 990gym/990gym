@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>990짐 구독 추이</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy: #1a2744;
+    --blue: #285FC7;
+    --gray: #f5f6fa;
+    --text: #222;
+    --text-light: #666;
+    --text-muted: #8a8f9c;
+    --border: #e0e4ef;
+    --grid: #eceef4;
+    --red: #ef4444;
+    --good: #0f8a3c;
+    --bad: #c2410c;
+    /* 차트 색 (색약 검증 통과 순서) */
+    --s-new: #2a78d6;      /* 신규 */
+    --s-churn: #eb6834;    /* 해지·이탈 */
+    --s-return: #1baf7a;   /* 복귀 */
+    --s-failed: #eda100;   /* 결제실패 */
+    --s-basic: #2a78d6;
+    --s-standard: #eb6834;
+    --s-premium: #1baf7a;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--navy); padding: 16px; }
+  .login-box { background: white; border-radius: 16px; padding: 48px 40px; width: 360px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .login-logo { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .login-sub { font-size: 13px; color: var(--text-light); margin-bottom: 32px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; outline: none; }
+  .login-box input:focus { border-color: var(--blue); }
+  .login-btn { width: 100%; padding: 13px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; font-family: inherit; }
+  .login-btn:hover { background: var(--blue); }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+  #admin-screen { display: none; }
+  .header { background: var(--navy); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .header-logo { color: white; font-size: 18px; font-weight: 700; }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .header-link, .logout-btn { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; text-decoration: none; display: inline-block; }
+  .header-link:hover, .logout-btn:hover { background: rgba(255,255,255,0.2); }
+  .header-link.current { background: white; color: var(--navy); font-weight: 700; }
+  .session-timer { color: rgba(255,255,255,0.6); font-size: 13px; }
+
+  .main { padding: 28px clamp(16px, 2.5vw, 32px) 48px; max-width: 1240px; margin: 0 auto; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .page-sub { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+  .reload-btn { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: inherit; font-size: 13px; cursor: pointer; color: var(--text); }
+  .reload-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; min-width: 0; }
+  .kpi-label { font-size: 13px; color: var(--text-light); }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--navy); margin-top: 6px; letter-spacing: -0.02em; white-space: nowrap; }
+  .kpi-value small { font-size: 14px; font-weight: 500; color: var(--text-light); margin-left: 2px; }
+  .kpi-delta { font-size: 12px; margin-top: 6px; color: var(--text-light); }
+  .kpi-delta b { font-weight: 700; }
+  .kpi-delta .good { color: var(--good); }
+  .kpi-delta .bad { color: var(--bad); }
+
+  .card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; min-width: 0; }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--text-light); margin-top: 3px; line-height: 1.5; }
+
+  .insights { margin-bottom: 16px; }
+  .insights ul { list-style: none; margin-top: 12px; display: grid; gap: 10px; }
+  .insights li { position: relative; padding-left: 18px; font-size: 14px; line-height: 1.65; }
+  .insights li::before { content: ''; position: absolute; left: 3px; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--navy); }
+  .insights li b { color: var(--navy); }
+  .insights .caveat { margin-top: 14px; font-size: 12px; color: var(--text-light); background: var(--gray); border-radius: 8px; padding: 10px 12px; line-height: 1.6; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .chart { position: relative; margin-top: 14px; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart text { font-family: 'Noto Sans KR', sans-serif; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 12px; color: var(--text-light); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend i.line { height: 2px; width: 14px; border-radius: 1px; }
+
+  .tip { position: absolute; pointer-events: none; background: #111827; color: white; font-size: 12px; line-height: 1.6; padding: 8px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; opacity: 0; transition: opacity .08s; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+  .tip.show { opacity: 1; }
+  .tip b { font-weight: 700; }
+  .tip .row { display: flex; align-items: center; gap: 6px; }
+  .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .tip .muted { color: #b8bfcc; }
+
+  .planbar { display: flex; height: 28px; gap: 2px; margin-top: 16px; border-radius: 6px; overflow: hidden; }
+  .planbar div { min-width: 2px; }
+  .planlist { margin-top: 14px; display: grid; gap: 8px; }
+  .planlist .row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .planlist i { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .planlist .name { flex: 1; }
+  .planlist .num { font-variant-numeric: tabular-nums; color: var(--text-light); }
+  .planlist .num b { color: var(--text); font-weight: 600; }
+  .other-reasons { margin-top: 12px; font-size: 12px; color: var(--text-light); line-height: 1.7; }
+  .other-reasons b { color: var(--text); font-weight: 600; }
+
+  .table-card { padding: 0; overflow: hidden; }
+  .table-card .card-head { padding: 18px 22px 12px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 10px 12px; text-align: right; white-space: nowrap; border-top: 1px solid var(--border); }
+  th { font-size: 12px; font-weight: 500; color: var(--text-light); background: #fafbfd; }
+  th:first-child, td:first-child { text-align: left; padding-left: 22px; }
+  th:last-child, td:last-child { padding-right: 22px; }
+  tr.partial td { color: var(--text-light); }
+  .foot { margin-top: 16px; font-size: 12px; color: var(--text-light); line-height: 1.8; }
+  .foot b { color: var(--text); font-weight: 600; }
+  .loading { text-align: center; color: var(--text-light); padding: 80px 0; font-size: 14px; }
+
+  @media (max-width: 1000px) {
+    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid2 { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .header { padding: 12px 16px; }
+    .session-timer { display: none; }
+    .main { padding: 20px 16px 40px; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .kpi { padding: 14px 14px; }
+    .kpi-value { font-size: 22px; }
+    .card { padding: 16px; }
+    .insights li { font-size: 13.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">990짐 관리자</div>
+    <div class="login-sub">구독 추이</div>
+    <input type="password" id="pw-input" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<div id="admin-screen">
+  <div class="header">
+    <div class="header-logo">990짐 관리자</div>
+    <div class="header-right">
+      <span class="session-timer" id="session-timer"></span>
+      <a href="admin.html" class="header-link">👥 구독자 관리</a>
+      <a href="stats.html" class="header-link current">📈 구독 추이</a>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-title">월구독 추이</div>
+        <div class="page-sub" id="page-sub">불러오는 중...</div>
+      </div>
+      <button class="reload-btn" onclick="loadAll()">새로고침</button>
+    </div>
+    <div id="content"><div class="loading">불러오는 중...</div></div>
+  </div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
+const ADMIN_PW = '990gym2026!';
+const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
+const PLAN_ORDER = ['베이직', '스탠다드', '프리미엄'];
+const PLAN_COLOR = { '베이직': 'var(--s-basic)', '스탠다드': 'var(--s-standard)', '프리미엄': 'var(--s-premium)' };
+const CHURN_REASONS = ['기간권 전환', '이사', '개인사정', '운동중단', '부상', '가격 부담', '타 시설 이동', '기타'];
+const SESSION_TIMEOUT = 30 * 60 * 1000;
+const DAY = 864e5;
+const KST = 9 * 3600e3;
+
+// ================= 로그인 (admin.html 과 같은 세션 공유) =================
+let sessionInterval = null, sessionExpiry = null;
+function doLogin() {
+  if (document.getElementById('pw-input').value === ADMIN_PW) {
+    sessionStorage.setItem('admin_logged_in', '1');
+    sessionExpiry = Date.now() + SESSION_TIMEOUT;
+    sessionStorage.setItem('admin_expiry', sessionExpiry);
+    showAdmin();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+function showAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'block';
+  loadAll();
+  if (sessionInterval) clearInterval(sessionInterval);
+  sessionInterval = setInterval(() => {
+    const remaining = sessionExpiry - Date.now();
+    if (remaining <= 0) { doLogout(true); return; }
+    const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('session-timer').textContent = `${m}:${String(s).padStart(2, '0')} 후 자동 로그아웃`;
+  }, 1000);
+  ['mousemove', 'keydown', 'click', 'touchstart'].forEach(ev => document.addEventListener(ev, resetSessionTimer, { passive: true }));
+}
+function resetSessionTimer() {
+  sessionExpiry = Date.now() + SESSION_TIMEOUT;
+  sessionStorage.setItem('admin_expiry', sessionExpiry);
+}
+function doLogout(auto) {
+  sessionStorage.removeItem('admin_logged_in');
+  sessionStorage.removeItem('admin_expiry');
+  if (sessionInterval) clearInterval(sessionInterval);
+  ['mousemove', 'keydown', 'click', 'touchstart'].forEach(ev => document.removeEventListener(ev, resetSessionTimer));
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+  if (auto) alert('30분 동안 활동이 없어 자동 로그아웃되었습니다.');
+}
+window.addEventListener('load', () => {
+  const ok = sessionStorage.getItem('admin_logged_in');
+  const exp = parseInt(sessionStorage.getItem('admin_expiry'));
+  if (ok && exp && Date.now() < exp) { sessionExpiry = exp; showAdmin(); }
+});
+
+// ================= 공통 =================
+function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const fmtInt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtWon = n => fmtInt(n) + '원';
+function fmtManwon(n) {
+  if (Math.abs(n) >= 10000) {
+    const v = n / 10000;
+    return (Math.abs(v) >= 100 ? fmtInt(v) : v.toFixed(1).replace(/\.0$/, '')) + '만';
+  }
+  return fmtInt(n);
+}
+const fmtPct = (v, d = 1) => v == null || !isFinite(v) ? '-' : (v * 100).toFixed(d).replace(/\.0$/, '') + '%';
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + fmtInt(Math.abs(n));
+const monthIdx = t => { const d = new Date(t + KST); return d.getUTCFullYear() * 12 + d.getUTCMonth(); };
+const monthStart = mi => Date.UTC(Math.floor(mi / 12), mi % 12, 1) - KST;
+const monthLabel = mi => `${mi % 12 + 1}월`;
+const monthLabelFull = mi => `${Math.floor(mi / 12)}년 ${mi % 12 + 1}월`;
+function addMonths(t, k) {
+  const d = new Date(t + KST);
+  const y = d.getUTCFullYear(), m = d.getUTCMonth() + k, day = d.getUTCDate();
+  const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return Date.UTC(y, m, Math.min(day, last), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()) - KST;
+}
+function kstDay(t) { const d = new Date(t + KST); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; }
+
+async function fetchAll(path) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Range-Unit': 'items', 'Range': `${from}-${from + 999}` }
+    });
+    if (!res.ok) throw new Error(`${path.split('?')[0]} HTTP ${res.status}`);
+    const rows = await res.json();
+    out.push(...rows);
+    if (rows.length < 1000) return out;
+  }
+}
+
+// ================= 데이터 → 구독 구간 =================
+// 회원마다 이력을 시간순으로 따라가며 "구독 중이던 구간"을 만든다.
+// 시작 = 가입/복귀, 끝 = 해지/결제실패. 같은 사람이 해지 후 돌아오면 구간이 여러 개.
+function buildIntervals(subs, events) {
+  const bySid = new Map();
+  for (const e of events) {
+    const k = String(e.subscriber_id);
+    if (!bySid.has(k)) bySid.set(k, []);
+    bySid.get(k).push(e);
+  }
+  const intervals = [];
+  const now = Date.now();
+  for (const s of subs) {
+    const sid = String(s.id);
+    const evs = (bySid.get(sid) || []).slice().sort((a, b) => (Date.parse(a.occurred_at) - Date.parse(b.occurred_at)) || ((a.id || 0) - (b.id || 0)));
+    let cur = null, had = false, lastClosed = null, lastT = null;
+    const open = (t, plan) => { cur = { sid, start: t, end: null, endType: null, reason: null, first: !had, plans: [{ t, plan: plan || s.plan }] }; had = true; };
+    const close = (t, type, reason) => { cur.end = Math.max(t, cur.start); cur.endType = type; cur.reason = reason || null; intervals.push(cur); lastClosed = cur; cur = null; };
+    for (const e of evs) {
+      const t = Date.parse(e.occurred_at);
+      if (!isFinite(t)) continue;
+      lastT = t;
+      if (e.event_type === 'signup' || e.event_type === 'return') {
+        if (!cur) open(t, e.plan);
+        else if (e.plan) cur.plans.push({ t, plan: e.plan });
+      } else if (e.event_type === 'cancel' || e.event_type === 'payment_failed') {
+        if (cur) close(t, e.event_type === 'cancel' ? 'cancel' : 'failed', e.reason);
+        else if (e.event_type === 'cancel' && e.reason && lastClosed && !lastClosed.reason) lastClosed.reason = e.reason; // 결제실패 후 센터에서 해지 처리 → 사유만 연결
+      } else if (e.event_type === 'plan_change' && cur && e.plan) {
+        cur.plans.push({ t, plan: e.plan });
+      }
+    }
+    // 현재 상태와 이력이 어긋나는 경우 상태를 기준으로 맞춘다
+    if (s.status === 'active' && !cur) {
+      const t0 = Math.max(lastT || 0, Date.parse(s.created_at) || 0) || now;
+      open(Math.min(t0, now), s.plan);
+    }
+    if (cur) {
+      if (s.status === 'active') { if (s.plan && cur.plans[cur.plans.length - 1].plan !== s.plan) cur.plans.push({ t: now, plan: s.plan }); intervals.push(cur); }
+      else {
+        const ca = Date.parse(s.cancelled_at);
+        const t = isFinite(ca) && ca > cur.start ? ca : Math.min(addMonths(cur.start, 1), now);
+        close(t, s.status === 'payment_failed' ? 'failed' : 'cancel', s.churn_reason);
+      }
+    } else if (s.status === 'cancelled' && s.churn_reason && lastClosed && !lastClosed.reason) {
+      lastClosed.reason = s.churn_reason;
+    }
+  }
+  return intervals;
+}
+const isActiveAt = (iv, t) => iv.start < t && (iv.end === null || iv.end >= t);
+function planAt(iv, t) {
+  let p = iv.plans[0].plan;
+  for (const x of iv.plans) { if (x.t <= t) p = x.plan; else break; }
+  return p;
+}
+
+// ================= 지표 계산 =================
+function computeStats(subs, events) {
+  const now = Date.now();
+  const ivs = buildIntervals(subs, events);
+  if (!ivs.length) return null;
+  const firstMi = monthIdx(Math.min(...ivs.map(i => i.start)));
+  const curMi = monthIdx(now);
+  const months = [];
+  for (let mi = firstMi; mi <= curMi; mi++) {
+    const S = monthStart(mi), E = mi === curMi ? now : monthStart(mi + 1);
+    const m = { mi, partial: mi === curMi, S, E, newC: 0, retC: 0, cancelC: 0, failC: 0 };
+    m.startActive = ivs.filter(i => isActiveAt(i, S)).length;
+    for (const i of ivs) {
+      if (i.start >= S && i.start < E) i.first ? m.newC++ : m.retC++;
+      if (i.end !== null && i.end >= S && i.end < E) i.endType === 'cancel' ? m.cancelC++ : m.failC++;
+    }
+    const activeEnd = ivs.filter(i => isActiveAt(i, E));
+    m.endActive = activeEnd.length;
+    m.mrr = activeEnd.reduce((sum, i) => sum + (PLAN_PRICES[planAt(i, E)] || 0), 0);
+    m.churnC = m.cancelC + m.failC;
+    m.net = m.newC + m.retC - m.churnC;
+    m.base = m.startActive;
+    m.newRate = m.base >= 5 ? m.newC / m.base : null;
+    m.churnRate = m.base >= 5 ? m.churnC / m.base : null;
+    months.push(m);
+  }
+
+  // 가입 후 N개월 유지율 (첫 구독 기준)
+  const firsts = ivs.filter(i => i.first);
+  const retention = [];
+  for (let k = 1; k <= 12; k++) {
+    // k개월 뒤에도 남아 있다 = k+1번째 달 결제까지 이어짐 (결제 시각 차이를 감안해 2일 여유)
+    const elig = firsts.filter(i => addMonths(i.start, k) + 2 * DAY <= now);
+    if (elig.length < 10) break;
+    const kept = elig.filter(i => i.end === null || i.end > addMonths(i.start, k) + 2 * DAY).length;
+    retention.push({ k, n: elig.length, kept, rate: kept / elig.length });
+  }
+
+  // 이탈 시점 (구독 시작 후 며칠 만에 나갔나)
+  const ended = ivs.filter(i => i.end !== null);
+  // k개월 차 이탈 = k번째 달이 끝나기 전(또는 끝나는 시점)에 그만둠. 1 = 첫 달만 이용
+  const tenureMonths = i => { let k = 1; while (k < 60 && i.end > addMonths(i.start, k) + 2 * DAY) k++; return k; };
+  const byTenure = {};
+  for (const i of ended) { const k = Math.min(tenureMonths(i), 7); byTenure[k] = (byTenure[k] || 0) + 1; }
+
+  // 사유
+  const reasonCount = {}, otherTexts = {};
+  const cancelled = ended.filter(i => i.endType === 'cancel');
+  for (const i of ended) {
+    let r = (i.reason || '').trim();
+    let cat;
+    if (!r) cat = i.endType === 'failed' ? '결제실패(사유 없음)' : '미입력';
+    else {
+      const head = r.split(/[:：]/)[0].trim();
+      cat = CHURN_REASONS.includes(head) ? head : CHURN_REASONS.includes(r) ? r : '기타';
+      if (cat === '기타') { const d = r.replace(/^기타\s*[:：]?\s*/, '').trim(); if (d) otherTexts[d] = (otherTexts[d] || 0) + 1; }
+    }
+    reasonCount[cat] = (reasonCount[cat] || 0) + 1;
+  }
+
+  // 복귀
+  const stoppedPeople = new Set(ended.map(i => i.sid));
+  const returners = new Set(ivs.filter(i => !i.first).map(i => i.sid));
+  const gaps = [];
+  const bySid = {};
+  for (const i of ivs) (bySid[i.sid] = bySid[i.sid] || []).push(i);
+  for (const list of Object.values(bySid)) {
+    list.sort((a, b) => a.start - b.start);
+    for (let j = 1; j < list.length; j++) if (list[j - 1].end !== null) gaps.push((list[j].start - list[j - 1].end) / DAY);
+  }
+  const failedEnds = ended.filter(i => i.endType === 'failed');
+  const failedRecovered = failedEnds.filter(i => (bySid[i.sid] || []).some(x => x.start >= i.end)).length;
+
+  // 현재 플랜 구성
+  const activeNow = ivs.filter(i => i.end === null);
+  const planMix = {};
+  for (const i of activeNow) { const p = planAt(i, now) || '기타'; planMix[p] = (planMix[p] || 0) + 1; }
+  const mrrNow = activeNow.reduce((s, i) => s + (PLAN_PRICES[planAt(i, now)] || 0), 0);
+
+  const hasEstimates = events.some(e => e.source === 'toss' || e.source === 'backfill');
+  const estimatedUntil = events.filter(e => e.source === 'toss' || e.source === 'backfill').reduce((mx, e) => Math.max(mx, Date.parse(e.occurred_at) || 0), 0);
+  return { ivs, months, retention, byTenure, ended, cancelled, reasonCount, otherTexts, stoppedPeople, returners, gaps, failedEnds, failedRecovered, activeNow, planMix, mrrNow, hasEstimates, estimatedUntil, now };
+}
+
+// ================= 해석 문장 =================
+function buildInsights(st) {
+  const out = [];
+  const full = st.months.filter(m => !m.partial);
+  const L = full[full.length - 1], P = full[full.length - 2];
+  const C = st.months[st.months.length - 1];
+  if (L) {
+    const inflow = `신규 <b>${L.newC}명</b>${L.retC ? `·복귀 <b>${L.retC}명</b>` : ''}`;
+    out.push(`<b>${monthLabel(L.mi)}</b>에는 ${inflow}이 들어오고 <b>${L.churnC}명</b>이 나가 순증 <b>${signed(L.net)}명</b>이었어요. 월말 활성 구독자는 <b>${fmtInt(L.endActive)}명</b>이에요.`);
+  }
+  const rated = full.filter(m => m.churnRate != null);
+  if (L && L.churnRate != null) {
+    const avg = rated.reduce((s, m) => s + m.churnRate, 0) / rated.length;
+    let cmp = '';
+    if (P && P.churnRate != null) {
+      const d = (L.churnRate - P.churnRate) * 100;
+      cmp = Math.abs(d) < 0.5 ? `${monthLabel(P.mi)}(${fmtPct(P.churnRate)})와 비슷한 수준이에요` : `${monthLabel(P.mi)}(${fmtPct(P.churnRate)})보다 <b>${Math.abs(d).toFixed(1)}%p ${d < 0 ? '낮아졌어요' : '높아졌어요'}</b>`;
+    }
+    const grow = L.newRate != null ? (L.newRate > L.churnRate
+      ? ` 신규율(${fmtPct(L.newRate)})이 이탈률보다 높아서 구독자가 늘어나는 흐름이에요.`
+      : ` 신규율(${fmtPct(L.newRate)})이 이탈률보다 낮아서, 신규만으로는 빠지는 인원을 못 채우고 있어요.`) : '';
+    out.push(`${monthLabel(L.mi)} 이탈률은 <b>${fmtPct(L.churnRate)}</b>로 ${cmp || '처음 계산된 달이에요'}${rated.length >= 3 ? ` (지금까지 평균 ${fmtPct(avg)})` : ''}.${grow}`);
+  }
+  if (st.ended.length >= 5) {
+    const n = st.ended.length;
+    const m1 = st.byTenure[1] || 0, m3 = (st.byTenure[1] || 0) + (st.byTenure[2] || 0) + (st.byTenure[3] || 0);
+    out.push(`지금까지 이탈 <b>${n}건</b> 중 <b>${fmtPct(m3 / n, 0)}</b>가 구독 시작 후 <b>3개월 안</b>에 일어났고, 첫 달만 이용하고 나간 경우가 ${fmtPct(m1 / n, 0)}예요. 초반 1~3개월을 넘기게 만드는 게 유지의 핵심 구간이에요.`);
+  }
+  const r3 = st.retention.find(r => r.k === 3), r1 = st.retention.find(r => r.k === 1);
+  if (r3) out.push(`처음 가입한 사람 100명 중 <b>1개월 뒤 약 ${Math.round((r1 ? r1.rate : 0) * 100)}명</b>, <b>3개월 뒤 약 ${Math.round(r3.rate * 100)}명</b>이 남아 있어요 (3개월이 지난 가입자 ${r3.n}명 기준).`);
+  if (st.failedEnds.length) {
+    const f = st.failedEnds.length, n = st.ended.length;
+    out.push(`이탈 중 <b>결제실패가 ${f}건(${fmtPct(f / n, 0)})</b>이에요. 이 중 ${st.failedRecovered}건은 다시 결제가 이어졌고 ${f - st.failedRecovered}건은 그대로 끊겼어요. 본인이 그만둔 게 아니라 카드 문제로 끊긴 경우라, 재결제 안내로 되살릴 수 있는 몫이에요.`);
+  }
+  if (st.stoppedPeople.size) {
+    const ret = [...st.returners].filter(s => st.stoppedPeople.has(s)).length;
+    const avgGap = st.gaps.length ? st.gaps.reduce((a, b) => a + b, 0) / st.gaps.length : null;
+    if (ret) out.push(`한 번 그만둔 <b>${st.stoppedPeople.size}명</b> 중 <b>${ret}명(${fmtPct(ret / st.stoppedPeople.size, 0)})</b>이 다시 돌아왔어요${avgGap != null ? `. 평균 <b>${Math.round(avgGap)}일</b> 쉬고 복귀했어요` : ''}.`);
+  }
+  const total = st.activeNow.length;
+  if (total) {
+    const upper = (st.planMix['스탠다드'] || 0) + (st.planMix['프리미엄'] || 0);
+    out.push(`지금 활성 <b>${total}명</b> 중 스탠다드 ${st.planMix['스탠다드'] || 0}명·프리미엄 ${st.planMix['프리미엄'] || 0}명으로 상위 플랜이 <b>${fmtPct(upper / total, 0)}</b>이고, 1인당 월 평균 <b>${fmtWon(st.mrrNow / total)}</b>이에요.`);
+  }
+  const reasons = Object.entries(st.reasonCount).filter(([k]) => k !== '미입력' && k !== '결제실패(사유 없음)').sort((a, b) => b[1] - a[1]);
+  const unk = st.reasonCount['미입력'] || 0;
+  if (reasons.length) {
+    const [top, cnt] = reasons[0];
+    const known = reasons.reduce((s, [, v]) => s + v, 0);
+    out.push(`사유가 기록된 해지 ${known}건 중 1위는 <b>'${escHtml(top)}'(${cnt}건)</b>이에요.${unk ? ` 다만 해지 ${unk}건은 사유가 비어 있어서, 해지할 때 사유를 꼭 남기면 이 그림이 더 정확해져요.` : ''}`);
+  }
+  if (C && C.partial) {
+    const d = new Date(st.now + KST).getUTCDate();
+    out.push(`<b>${monthLabel(C.mi)}</b>은 ${d}일까지 신규 ${C.newC}명${C.retC ? `·복귀 ${C.retC}명` : ''}, 이탈 ${C.churnC}명이에요 (진행 중).`);
+  }
+  return out;
+}
+
+// ================= 차트 (SVG) =================
+const tipEl = () => document.getElementById('tip');
+function showTip(html, ev, host) {
+  const t = tipEl();
+  t.innerHTML = html; t.classList.add('show');
+  const r = host.getBoundingClientRect();
+  const x = (ev.touches ? ev.touches[0].clientX : ev.clientX), y = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+  const tw = t.offsetWidth, th = t.offsetHeight;
+  let left = x + 14, top = y - th - 10;
+  if (left + tw > window.innerWidth - 8) left = x - tw - 14;
+  if (left < 8) left = 8;
+  if (top < 8) top = y + 16;
+  t.style.left = (left + window.scrollX) + 'px';
+  t.style.top = (top + window.scrollY) + 'px';
+}
+function hideTip() { tipEl().classList.remove('show'); }
+function niceScale(max, count = 4) {
+  if (max <= 0) return { top: count, step: 1 };
+  const raw = max / count, p = 10 ** Math.floor(Math.log10(raw)), f = raw / p;
+  let step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  const top = Math.ceil(max / step) * step;
+  return { top, step };
+}
+const svgNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(svgNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+// 위/아래 한쪽 끝만 둥근 막대
+function barPath(x, y0, y1, w, r, roundTop) {
+  const h = Math.abs(y1 - y0); r = Math.min(r, h, w / 2);
+  if (roundTop) { const top = Math.min(y0, y1), bot = Math.max(y0, y1); return `M${x},${bot}V${top + r}Q${x},${top} ${x + r},${top}H${x + w - r}Q${x + w},${top} ${x + w},${top + r}V${bot}Z`; }
+  const top = Math.min(y0, y1), bot = Math.max(y0, y1);
+  return `M${x},${top}V${bot - r}Q${x},${bot} ${x + r},${bot}H${x + w - r}Q${x + w},${bot} ${x + w},${bot - r}V${top}Z`;
+}
+
+/* 막대 차트. up: 위로 쌓는 계열, down: 아래로 쌓는 계열 (들어온 사람 / 나간 사람) */
+function columnChart(host, { labels, partial, up = [], down = [], height = 230, yFmt = fmtInt, tip, endLabel }) {
+  host.innerHTML = '';
+  const W = host.clientWidth || 600, H = height;
+  const m = { l: 44, r: 8, t: 14, b: down.length ? 26 : 30 };
+  const n = labels.length;
+  const upMax = Math.max(0, ...labels.map((_, i) => up.reduce((s, sr) => s + (sr.values[i] || 0), 0)));
+  const dnMax = Math.max(0, ...labels.map((_, i) => down.reduce((s, sr) => s + (sr.values[i] || 0), 0)));
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img' }, host);
+  const plotH = H - m.t - m.b;
+  let scale, zeroY, yOf;
+  if (down.length) {
+    const sc = niceScale(Math.max(upMax, dnMax, 1), 2);
+    scale = sc; const total = sc.top * 2;
+    zeroY = m.t + plotH / 2;
+    yOf = v => zeroY - (v / total) * plotH;
+    for (let v = -sc.top; v <= sc.top + 1e-9; v += sc.step) {
+      const y = yOf(v);
+      el('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, stroke: v === 0 ? '#c9cedb' : 'var(--grid)', 'stroke-width': 1 }, svg);
+      el('text', { x: m.l - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-muted)' }, svg).textContent = yFmt(Math.abs(v));
+    }
+  } else {
+    scale = niceScale(Math.max(upMax, 1), 4);
+    zeroY = m.t + plotH;
+    yOf = v => zeroY - (v / scale.top) * plotH;
+    for (let v = 0; v <= scale.top + 1e-9; v += scale.step) {
+      const y = yOf(v);
+      el('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, stroke: v === 0 ? '#c9cedb' : 'var(--grid)', 'stroke-width': 1 }, svg);
+      el('text', { x: m.l - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-muted)' }, svg).textContent = yFmt(v);
+    }
+  }
+  const band = (W - m.l - m.r) / n;
+  const bw = Math.min(24, band * 0.56);
+  const labelY = down.length ? H - 6 : H - 10;
+  labels.forEach((lab, i) => {
+    const cx = m.l + band * i + band / 2, x = cx - bw / 2;
+    const g = el('g', { opacity: partial && partial[i] ? 0.45 : 1 }, svg);
+    const stack = (series, dir) => {
+      let acc = 0;
+      const visible = series.map(s => s.values[i] || 0);
+      const lastIdx = visible.reduce((li, v, j) => v > 0 ? j : li, -1);
+      series.forEach((s, j) => {
+        const v = visible[j]; if (!v) return;
+        const y0 = yOf(dir * acc), y1 = yOf(dir * (acc + v));
+        const gapAdj = acc > 0 ? 2 : 0;
+        const a = dir > 0 ? y0 - gapAdj : y0 + gapAdj;
+        if (Math.abs(y1 - a) < 0.5) { acc += v; return; }
+        el('path', { d: barPath(x, a, y1, bw, j === lastIdx ? 4 : 0, dir > 0), fill: s.color }, g);
+        acc += v;
+      });
+    };
+    stack(up, 1); stack(down, -1);
+    el('text', { x: cx, y: labelY, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--text-light)' }, svg).textContent = lab + (partial && partial[i] ? '*' : '');
+    if (endLabel && i === n - 1 || endLabel && endLabel.all) {
+      const v = up.reduce((s, sr) => s + (sr.values[i] || 0), 0);
+      el('text', { x: cx, y: yOf(v) - 6, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 600, fill: 'var(--text)' }, svg).textContent = yFmt(v);
+    }
+    const hit = el('rect', { x: m.l + band * i, y: m.t, width: band, height: plotH, fill: 'transparent', style: 'cursor:default' }, svg);
+    const onMove = ev => { hit.setAttribute('fill', 'rgba(26,39,68,0.04)'); showTip(tip(i), ev, host); };
+    hit.addEventListener('mousemove', onMove);
+    hit.addEventListener('touchstart', onMove, { passive: true });
+    hit.addEventListener('mouseleave', () => { hit.setAttribute('fill', 'transparent'); hideTip(); });
+  });
+}
+
+/* 선 차트 (같은 단위의 계열만) */
+function lineChart(host, { labels, partial, series, height = 230, yFmt = v => v, yMaxMin = 0, tip, xTitle }) {
+  host.innerHTML = '';
+  const W = host.clientWidth || 600, H = height;
+  const m = { l: 44, r: 54, t: 14, b: 30 };
+  const n = labels.length;
+  const allV = series.flatMap(s => s.values.filter(v => v != null));
+  const sc = niceScale(Math.max(yMaxMin, ...allV, 0.0001), 4);
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img' }, host);
+  const plotH = H - m.t - m.b, plotW = W - m.l - m.r;
+  const xOf = i => m.l + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1));
+  const yOf = v => m.t + plotH - (v / sc.top) * plotH;
+  for (let v = 0; v <= sc.top + 1e-9; v += sc.step) {
+    el('line', { x1: m.l, x2: W - m.r, y1: yOf(v), y2: yOf(v), stroke: v === 0 ? '#c9cedb' : 'var(--grid)', 'stroke-width': 1 }, svg);
+    el('text', { x: m.l - 8, y: yOf(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-muted)' }, svg).textContent = yFmt(v);
+  }
+  labels.forEach((lab, i) => {
+    el('text', { x: xOf(i), y: H - 10, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--text-light)' }, svg).textContent = lab + (partial && partial[i] ? '*' : '');
+  });
+  const ends = [];
+  series.forEach(s => {
+    let d = '', started = false, lastI = -1;
+    s.values.forEach((v, i) => {
+      if (v == null) { started = false; return; }
+      d += (started ? 'L' : 'M') + xOf(i) + ',' + yOf(v); started = true; lastI = i;
+    });
+    if (s.area && s.values.every(v => v != null)) {
+      el('path', { d: d + `L${xOf(n - 1)},${yOf(0)}L${xOf(0)},${yOf(0)}Z`, fill: s.color, opacity: 0.1 }, svg);
+    }
+    el('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'stroke-dasharray': s.dash || '' }, svg);
+    s.values.forEach((v, i) => { if (v != null && (i === lastI || s.dots)) el('circle', { cx: xOf(i), cy: yOf(v), r: 4, fill: s.color, stroke: 'white', 'stroke-width': 2 }, svg); });
+    if (lastI >= 0) ends.push({ y: yOf(s.values[lastI]), x: xOf(lastI), text: (s.endPrefix || '') + yFmt(s.values[lastI]) });
+  });
+  // 끝 값 라벨 (겹치면 생략 → 범례·툴팁이 대신)
+  ends.sort((a, b) => a.y - b.y);
+  const collide = ends.some((e, i) => i && e.y - ends[i - 1].y < 14);
+  if (!collide) ends.forEach(e => { el('text', { x: e.x + 9, y: e.y + 4, 'font-size': 11, 'font-weight': 600, fill: 'var(--text)' }, svg).textContent = e.text; });
+  const cross = el('line', { y1: m.t, y2: m.t + plotH, stroke: '#c9cedb', 'stroke-width': 1, opacity: 0 }, svg);
+  const hit = el('rect', { x: m.l - 10, y: m.t, width: plotW + 20, height: plotH, fill: 'transparent' }, svg);
+  const onMove = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(n - 1, Math.round(n === 1 ? 0 : ((px - m.l) / plotW) * (n - 1))));
+    cross.setAttribute('x1', xOf(i)); cross.setAttribute('x2', xOf(i)); cross.setAttribute('opacity', 1);
+    showTip(tip(i), ev, host);
+  };
+  hit.addEventListener('mousemove', onMove);
+  hit.addEventListener('touchstart', onMove, { passive: true });
+  hit.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); hideTip(); });
+}
+
+/* 가로 막대 (한 계열) */
+function hbarChart(host, items, { color, total }) {
+  host.innerHTML = '';
+  const W = host.clientWidth || 500, rowH = 30, labelW = Math.min(118, W * 0.34), valueW = 64;
+  const H = items.length * rowH + 4;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img' }, host);
+  const max = Math.max(1, ...items.map(it => it.value));
+  const plotW = W - labelW - valueW;
+  items.forEach((it, i) => {
+    const y = i * rowH + 6, h = 16;
+    el('text', { x: labelW - 10, y: y + 12, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--text)' }, svg).textContent = it.label;
+    const w = Math.max(2, (it.value / max) * plotW);
+    el('path', { d: `M${labelW},${y}H${labelW + w - Math.min(4, w / 2)}Q${labelW + w},${y} ${labelW + w},${y + Math.min(4, w / 2)}V${y + h - Math.min(4, w / 2)}Q${labelW + w},${y + h} ${labelW + w - Math.min(4, w / 2)},${y + h}H${labelW}Z`, fill: it.muted ? '#c9cedb' : color }, svg);
+    el('text', { x: labelW + w + 8, y: y + 12, 'font-size': 12, fill: 'var(--text-light)' }, svg).textContent = `${it.value}건 · ${fmtPct(it.value / total, 0)}`;
+    const hit = el('rect', { x: 0, y: i * rowH, width: W, height: rowH, fill: 'transparent' }, svg);
+    const onMove = ev => showTip(`<b>${escHtml(it.label)}</b><br>${it.value}건 (전체 이탈의 ${fmtPct(it.value / total)})`, ev, host);
+    hit.addEventListener('mousemove', onMove);
+    hit.addEventListener('touchstart', onMove, { passive: true });
+    hit.addEventListener('mouseleave', hideTip);
+  });
+}
+
+const legend = items => `<div class="legend">${items.map(([name, color, line]) => `<span><i class="${line ? 'line' : ''}" style="background:${color}"></i>${name}</span>`).join('')}</div>`;
+const tipRow = (color, name, val) => `<div class="row"><i style="background:${color}"></i>${name} <b>${val}</b></div>`;
+
+// ================= 화면 =================
+let STATS = null;
+async function loadAll() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const [subs, events] = await Promise.all([
+      fetchAll('subscribers?select=id,name,plan,status,created_at,cancelled_at,churn_reason&order=created_at.asc'),
+      fetchAll('subscription_events?select=*&order=occurred_at.asc,id.asc').catch(() => [])
+    ]);
+    STATS = computeStats(subs, events);
+    if (!STATS) { content.innerHTML = '<div class="loading">아직 구독 데이터가 없습니다.</div>'; return; }
+    STATS.noEvents = !events.length;
+    render();
+  } catch (e) {
+    console.error(e);
+    content.innerHTML = `<div class="loading">데이터를 불러오지 못했습니다. (${escHtml(e.message)})</div>`;
+  }
+}
+
+function deltaHtml(d, { goodWhenUp = true, fmt = signed, suffix = '', vs }) {
+  if (d == null || !isFinite(d)) return `<div class="kpi-delta">${vs || ''}</div>`;
+  const cls = Math.abs(d) < 1e-9 ? '' : ((d > 0) === goodWhenUp ? 'good' : 'bad');
+  const arrow = Math.abs(d) < 1e-9 ? '' : d > 0 ? '▲ ' : '▼ ';
+  return `<div class="kpi-delta"><b class="${cls}">${arrow}${fmt(d)}${suffix}</b> ${vs || ''}</div>`;
+}
+
+function render() {
+  const st = STATS;
+  const ms = st.months;
+  const full = ms.filter(m => !m.partial);
+  const L = full[full.length - 1], P = full[full.length - 2];
+  const C = ms[ms.length - 1];
+  const dt = new Date(st.now + KST);
+  document.getElementById('page-sub').textContent = `${dt.getUTCFullYear()}년 ${dt.getUTCMonth() + 1}월 ${dt.getUTCDate()}일 기준 · ${monthLabelFull(ms[0].mi)}부터 · 월구독 회원만`;
+
+  const startOfCur = C.startActive;
+  const r3 = st.retention.find(r => r.k === 3);
+  const mrrPrevEnd = C.partial ? (ms[ms.length - 2] || {}).mrr : null;
+  const kpis = [
+    { label: '활성 구독자', value: `${fmtInt(st.activeNow.length)}<small>명</small>`, delta: deltaHtml(st.activeNow.length - startOfCur, { vs: `이번 달 들어` }) },
+    { label: '월 반복매출', value: `${fmtManwon(st.mrrNow)}<small>원</small>`, delta: deltaHtml(mrrPrevEnd != null ? st.mrrNow - mrrPrevEnd : null, { fmt: d => (d > 0 ? '+' : d < 0 ? '−' : '') + fmtManwon(Math.abs(d)), vs: '지난달 말 대비' }) },
+    { label: `${L ? monthLabel(L.mi) : ''} 이탈률`, value: L && L.churnRate != null ? fmtPct(L.churnRate) : '-', delta: deltaHtml(L && P && L.churnRate != null && P.churnRate != null ? (L.churnRate - P.churnRate) * 100 : null, { goodWhenUp: false, fmt: d => (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1), suffix: '%p', vs: P ? `${monthLabel(P.mi)} 대비` : '' }) },
+    { label: `${L ? monthLabel(L.mi) : ''} 신규 가입`, value: L ? `${L.newC}<small>명</small>` : '-', delta: deltaHtml(L && P ? L.newC - P.newC : null, { vs: P ? `${monthLabel(P.mi)} 대비` : '' }) },
+    { label: '3개월 유지율', value: r3 ? fmtPct(r3.rate, 0) : '-', delta: `<div class="kpi-delta">${r3 ? `가입 후 3개월 지난 ${r3.n}명 중 ${r3.kept}명 유지` : '데이터가 더 쌓이면 표시돼요'}</div>` },
+  ];
+
+  const insights = buildInsights(st);
+  const caveats = [];
+  if (st.hasEstimates) caveats.push('11월 9일 이전 기록은 토스 결제 내역으로 복원했어요. 그때의 해지 날짜는 마지막 결제분이 끝나는 날로 추정한 값이라, 해지가 실제보다 한 달 늦은 달에 잡혔을 수 있어요.');
+  if (L && L.base < 100) caveats.push(`구독자 수가 아직 ${fmtInt(L.base)}명 수준이라 한두 명 차이로도 비율이 몇 %p씩 움직여요. 한 달 수치보다 몇 달의 흐름을 보세요.`);
+  if (st.noEvents) caveats.push('구독 이력 기록(subscription_events)이 아직 없어 현재 상태만으로 계산했어요.');
+
+  const labels = ms.map(m => monthLabel(m.mi));
+  const partial = ms.map(m => m.partial);
+  const reasonsSorted = Object.entries(st.reasonCount).sort((a, b) => {
+    const rank = k => (k === '미입력' || k === '결제실패(사유 없음)') ? 1 : 0;
+    return rank(a[0]) - rank(b[0]) || b[1] - a[1];
+  });
+  const otherList = Object.entries(st.otherTexts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const totalActive = st.activeNow.length;
+  const planKeys = [...PLAN_ORDER.filter(p => st.planMix[p]), ...Object.keys(st.planMix).filter(p => !PLAN_ORDER.includes(p))];
+
+  document.getElementById('content').innerHTML = `
+    <div class="kpis">${kpis.map(k => `<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.delta}</div>`).join('')}</div>
+
+    <div class="card insights">
+      <div class="card-title">데이터 해석</div>
+      <ul>${insights.map(s => `<li>${s}</li>`).join('')}</ul>
+      ${caveats.length ? `<div class="caveat">${caveats.join('<br>')}</div>` : ''}
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">들어온 사람 vs 나간 사람</div>
+        <div class="card-sub">위는 신규 가입·복귀, 아래는 해지·결제실패예요. 위가 아래보다 크면 그 달 구독자가 늘어난 거예요.</div>
+        <div class="chart" id="ch-flow"></div>
+        ${legend([['신규', 'var(--s-new)'], ['복귀', 'var(--s-return)'], ['해지', 'var(--s-churn)'], ['결제실패', 'var(--s-failed)']])}
+      </div>
+      <div class="card">
+        <div class="card-title">신규율 vs 이탈률</div>
+        <div class="card-sub">월초 활성 구독자 대비 그 달 신규 가입과 이탈 비율이에요. 파란 선이 주황 선 위에 있으면 성장하는 달이에요.</div>
+        <div class="chart" id="ch-rate"></div>
+        ${legend([['신규율', 'var(--s-new)', 1], ['이탈률', 'var(--s-churn)', 1]])}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">월말 활성 구독자</div>
+        <div class="card-sub">그 달 마지막 날 기준 구독 중인 인원이에요.</div>
+        <div class="chart" id="ch-active"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">월 반복매출</div>
+        <div class="card-sub">월말 활성 구독자의 플랜 가격 합계예요. 다음 달 자동결제로 들어올 금액에 가까워요.</div>
+        <div class="chart" id="ch-mrr"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">가입 후 유지율</div>
+        <div class="card-sub">처음 가입한 사람 중 N개월 뒤에도 구독 중인 비율이에요. 기간이 지난 가입자가 10명 이상인 구간만 표시해요.</div>
+        <div class="chart" id="ch-ret"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">해지 사유</div>
+        <div class="card-sub">지금까지의 이탈 ${st.ended.length}건 기준이에요.</div>
+        <div class="chart" id="ch-reason"></div>
+        ${otherList.length ? `<div class="other-reasons"><b>기타 사유</b> · ${otherList.map(([t, c]) => `${escHtml(t)}${c > 1 ? ` (${c})` : ''}`).join(' · ')}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">현재 플랜 구성</div>
+        <div class="card-sub">활성 구독자 ${totalActive}명 기준이에요.</div>
+        <div class="planbar">${planKeys.map(p => `<div title="${escHtml(p)} ${st.planMix[p]}명" style="flex:${st.planMix[p]};background:${PLAN_COLOR[p] || '#c9cedb'}"></div>`).join('')}</div>
+        <div class="planlist">${planKeys.map(p => `<div class="row"><i style="background:${PLAN_COLOR[p] || '#c9cedb'}"></i><span class="name">${escHtml(p)}</span><span class="num"><b>${st.planMix[p]}명</b> · ${fmtPct(st.planMix[p] / totalActive, 0)} · 월 ${fmtManwon((PLAN_PRICES[p] || 0) * st.planMix[p])}원</span></div>`).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">이탈 시점</div>
+        <div class="card-sub">구독을 시작하고 몇 개월 차에 그만뒀는지예요. 1개월 = 첫 달만 이용하고 이탈.</div>
+        <div class="chart" id="ch-tenure"></div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-head"><div class="card-title">월별 데이터</div><div class="card-sub">* 표시는 아직 진행 중인 달이에요.</div></div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>월</th><th>월초 활성</th><th>신규</th><th>복귀</th><th>해지</th><th>결제실패</th><th>순증</th><th>월말 활성</th><th>신규율</th><th>이탈률</th><th>월 반복매출</th></tr></thead>
+        <tbody>${ms.slice().reverse().map(m => `<tr class="${m.partial ? 'partial' : ''}"><td>${monthLabelFull(m.mi)}${m.partial ? '*' : ''}</td><td>${fmtInt(m.startActive)}</td><td>${m.newC}</td><td>${m.retC}</td><td>${m.cancelC}</td><td>${m.failC}</td><td>${signed(m.net)}</td><td>${fmtInt(m.endActive)}</td><td>${fmtPct(m.newRate)}</td><td>${fmtPct(m.churnRate)}</td><td>${fmtWon(m.mrr)}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="foot">
+      <b>계산 기준</b> · 이탈 = 해지 + 결제실패 (결제실패 후 센터에서 해지 처리한 경우는 한 번만 셈) ·
+      신규율 = 그 달 신규 가입 ÷ 월초 활성 · 이탈률 = 그 달 이탈 ÷ 월초 활성 (월초 활성이 5명 미만인 달은 생략) ·
+      유지율은 처음 가입 기준이며, 해지 후 복귀는 따로 집계해요.
+    </div>`;
+  drawCharts();
+}
+
+function drawCharts() {
+  const st = STATS; if (!st) return;
+  const ms = st.months;
+  const labels = ms.map(m => monthLabel(m.mi));
+  const partial = ms.map(m => m.partial);
+  const ptag = m => m.partial ? ' <span class="muted">(진행 중)</span>' : '';
+
+  columnChart(document.getElementById('ch-flow'), {
+    labels, partial,
+    up: [{ color: 'var(--s-new)', values: ms.map(m => m.newC) }, { color: 'var(--s-return)', values: ms.map(m => m.retC) }],
+    down: [{ color: 'var(--s-churn)', values: ms.map(m => m.cancelC) }, { color: 'var(--s-failed)', values: ms.map(m => m.failC) }],
+    tip: i => { const m = ms[i]; return `<b>${monthLabelFull(m.mi)}</b>${ptag(m)}${tipRow('var(--s-new)', '신규', m.newC + '명')}${tipRow('var(--s-return)', '복귀', m.retC + '명')}${tipRow('var(--s-churn)', '해지', m.cancelC + '명')}${tipRow('var(--s-failed)', '결제실패', m.failC + '명')}<div class="muted">순증 ${signed(m.net)}명</div>`; }
+  });
+
+  const rateMonths = ms.map(m => m.churnRate != null);
+  lineChart(document.getElementById('ch-rate'), {
+    labels, partial,
+    series: [
+      { color: 'var(--s-new)', values: ms.map(m => m.partial ? null : m.newRate), dots: true },
+      { color: 'var(--s-churn)', values: ms.map(m => m.partial ? null : m.churnRate), dots: true },
+    ],
+    yFmt: v => fmtPct(v, 0),
+    tip: i => { const m = ms[i]; if (m.partial) return `<b>${monthLabelFull(m.mi)}</b>${ptag(m)}<div class="muted">달이 끝나면 계산돼요</div>`; if (!rateMonths[i]) return `<b>${monthLabelFull(m.mi)}</b><div class="muted">월초 구독자가 적어 비율 생략</div>`; return `<b>${monthLabelFull(m.mi)}</b>${tipRow('var(--s-new)', '신규율', fmtPct(m.newRate))}${tipRow('var(--s-churn)', '이탈률', fmtPct(m.churnRate))}<div class="muted">월초 활성 ${fmtInt(m.base)}명 기준</div>`; }
+  });
+
+  columnChart(document.getElementById('ch-active'), {
+    labels, partial,
+    up: [{ color: 'var(--s-new)', values: ms.map(m => m.endActive) }],
+    endLabel: true,
+    tip: i => { const m = ms[i]; return `<b>${monthLabelFull(m.mi)}</b>${ptag(m)}<br>${m.partial ? '오늘' : '월말'} 활성 <b>${fmtInt(m.endActive)}명</b><div class="muted">전월 대비 ${signed(m.endActive - m.startActive)}명</div>`; }
+  });
+
+  columnChart(document.getElementById('ch-mrr'), {
+    labels, partial,
+    up: [{ color: 'var(--s-new)', values: ms.map(m => m.mrr) }],
+    yFmt: v => fmtManwon(v),
+    endLabel: true,
+    tip: i => { const m = ms[i]; return `<b>${monthLabelFull(m.mi)}</b>${ptag(m)}<br>월 반복매출 <b>${fmtWon(m.mrr)}</b><div class="muted">활성 ${fmtInt(m.endActive)}명 · 1인 평균 ${m.endActive ? fmtWon(m.mrr / m.endActive) : '-'}</div>`; }
+  });
+
+  const retHost = document.getElementById('ch-ret');
+  if (st.retention.length) {
+    const ret = [{ k: 0, rate: 1, n: st.ivs.filter(i => i.first).length, kept: null }, ...st.retention];
+    lineChart(retHost, {
+      labels: ret.map(r => r.k === 0 ? '가입' : `${r.k}개월`),
+      series: [{ color: 'var(--s-new)', values: ret.map(r => r.rate), dots: true, area: true }],
+      yFmt: v => fmtPct(v, 0), yMaxMin: 1,
+      tip: i => { const r = ret[i]; return r.k === 0 ? `<b>가입 시점</b><br>100%` : `<b>가입 후 ${r.k}개월</b><br>유지율 <b>${fmtPct(r.rate)}</b><div class="muted">${r.n}명 중 ${r.kept}명</div>`; }
+    });
+  } else retHost.innerHTML = '<div class="card-sub" style="padding:40px 0;text-align:center">가입 후 1개월이 지난 회원이 10명 이상 되면 표시돼요.</div>';
+
+  const reasons = Object.entries(st.reasonCount).sort((a, b) => {
+    const rank = k => (k === '미입력' || k === '결제실패(사유 없음)') ? 1 : 0;
+    return rank(a[0]) - rank(b[0]) || b[1] - a[1];
+  });
+  const reasonHost = document.getElementById('ch-reason');
+  if (reasons.length) hbarChart(reasonHost, reasons.map(([k, v]) => ({ label: k, value: v, muted: k === '미입력' || k === '결제실패(사유 없음)' })), { color: 'var(--s-churn)', total: st.ended.length });
+  else reasonHost.innerHTML = '<div class="card-sub" style="padding:40px 0;text-align:center">아직 이탈 기록이 없어요.</div>';
+
+  const tk = [1, 2, 3, 4, 5, 6, 7];
+  const tenureVals = tk.map(k => st.byTenure[k] || 0);
+  const tenureLabels = tk.map(k => k === 7 ? '7개월+' : `${k}개월 차`);
+  columnChart(document.getElementById('ch-tenure'), {
+    labels: tk.map(k => k === 7 ? '7개월+' : `${k}개월`),
+    up: [{ color: 'var(--s-churn)', values: tenureVals }],
+    endLabel: { all: true },
+    height: 210,
+    tip: i => `<b>${tenureLabels[i]}에 이탈</b><br>${tenureVals[i]}건 <span class="muted">(전체 이탈의 ${fmtPct(tenureVals[i] / Math.max(1, st.ended.length), 0)})</span>`
+  });
+}
+
+let resizeTimer = null;
+let lastW = window.innerWidth;
+window.addEventListener('resize', () => {
+  if (window.innerWidth === lastW) return;
+  lastW = window.innerWidth;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { hideTip(); drawCharts(); }, 150);
+});
+document.addEventListener('scroll', hideTip, { passive: true });
+</script>
+</body>
+</html>
