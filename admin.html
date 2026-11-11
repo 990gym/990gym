@@ -388,6 +388,7 @@ const SESSION_TIMEOUT = 2 * 60 * 60 * 1000;   // 2시간 동안 아무 조작이
 let currentAction = null;
 let currentPlanAction = null;
 let subscribers = [];
+let eventsBySub = null;
 let sessionInterval = null;
 let sessionExpiry = null;
 
@@ -468,7 +469,14 @@ async function loadInquiryCount() {
 async function loadSubscribers() {
   document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    subscribers = (await api('listSubscribers')).subscribers || [];
+    const out = await api('listSubscribers');
+    subscribers = out.subscribers || [];
+    // 구독 이력도 목록과 함께 미리 받아 둔다 → 이름을 누르면 바로 열림
+    eventsBySub = null;
+    if (Array.isArray(out.events)) {
+      eventsBySub = {};
+      out.events.forEach(e => { (eventsBySub[e.subscriber_id] = eventsBySub[e.subscriber_id] || []).push(e); });
+    }
     renderTable();
     renderStats();
     renderTodo();
@@ -900,10 +908,15 @@ async function openHistory(id) {
   document.getElementById('history-title').textContent = `${s.name || '-'}님 구독 이력`;
   document.getElementById('history-meta').textContent = `${s.phone || '-'} · 현재 ${s.plan || '-'} · ${statusTxt}`;
   document.getElementById('history-summary').innerHTML = '';
-  document.getElementById('history-body').innerHTML = '<div class="loading" style="padding:32px">불러오는 중...</div>';
   document.getElementById('history-modal').classList.add('active');
 
   let events = null, tableMissing = false;
+  if (eventsBySub) {   // 미리 받아 둔 이력으로 바로 표시
+    events = eventsBySub[s.id] || [];
+    renderHistory(s, events.length ? events : fallbackEvents(s), false);
+    return;
+  }
+  document.getElementById('history-body').innerHTML = '<div class="loading" style="padding:32px">불러오는 중...</div>';
   try {
     const out = await api('listEvents', { subscriberId: id });
     if (out.missing) tableMissing = true;
