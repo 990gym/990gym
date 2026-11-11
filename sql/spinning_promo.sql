@@ -13,3 +13,6 @@ alter table public.subscribers add column if not exists promo text;
 alter table public.subscribers add column if not exists price_consent_at timestamptz;
 alter table public.subscribers add column if not exists consent_token uuid not null default gen_random_uuid();
 create unique index if not exists subscribers_consent_token_key on public.subscribers (consent_token);
+
+-- 관리자가 '계속하기 문자'를 복사(발송)한 시각 — 관리자 화면 '오늘 할 일' 알림용
+alter table public.subscribers add column if not exists consent_msg_sent_at timestamptz;

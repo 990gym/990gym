@@ -79,6 +79,14 @@
   .btn-billing { background: #dbeafe; color: #2563eb; }
   .btn-addon { background: #ede9fe; color: #7c3aed; }
   .btn-consent { background: #fce7f3; color: #db2777; }
+  .todo-panel { display: none; margin-bottom: 20px; border: 2px solid #f9a8d4; background: #fff1f7; border-radius: 12px; padding: 16px 18px; }
+  .todo-panel.show { display: block; }
+  .todo-title { font-size: 16px; font-weight: 800; color: #be185d; }
+  .todo-sub { font-size: 12px; color: #9d174d; margin-top: 2px; }
+  .todo-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .todo-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: white; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .todo-item small { color: var(--text-light); margin-left: 6px; }
+  .todo-item.urgent { border-left: 4px solid #dc2626; }
   .promo-tag { display: inline-block; margin: 2px 0 0 4px; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .promo-wait { background: #fce7f3; color: #db2777; }
   .promo-ok { background: #dcfce7; color: #16a34a; }
@@ -221,6 +229,12 @@
         <div class="stat-value" id="stat-revenue">-</div>
         <div class="stat-sub">원</div>
       </div>
+    </div>
+
+    <div class="todo-panel" id="todo-panel">
+      <div class="todo-title" id="todo-title"></div>
+      <div class="todo-sub">스피닝 첫 달 50% 회원 · 손님이 동의해야 다음 달 99,000원 자동결제 (동의 없으면 결제일에 자동 종료)</div>
+      <div class="todo-list" id="todo-list"></div>
     </div>
 
     <div class="table-wrap">
@@ -427,6 +441,7 @@ async function loadSubscribers() {
     subscribers = await res.json();
     renderTable();
     renderStats();
+    renderTodo();
   } catch(e) {
     document.getElementById('table-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
   }
@@ -683,6 +698,50 @@ async function confirmPlanChange() {
   }
 }
 
+// ===== 오늘 할 일: 스피닝 첫 달 회원 '계속하기' 문자 =====
+const CONSENT_OPEN_DAYS = 14;   // 서버(_pricing.js)와 같은 값: 결제일 14일 전부터 동의 가능
+const kstDue = (d) => new Date(`${String(d).slice(0,10)}T00:00:00+09:00`);
+const fmtMD = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+function consentTodo(list) {
+  const now = new Date();
+  const todo = { send: [], remind: [] };
+  (list || []).forEach(s => {
+    if (!s.promo || s.price_consent_at || s.status !== 'active' || !s.next_billing_date) return;
+    const due = kstDue(s.next_billing_date);
+    const daysLeft = Math.ceil((due - now) / 86400000);
+    if (now < new Date(due.getTime() - CONSENT_OPEN_DAYS * 86400000)) return;   // 아직 안내 기간 전
+    if (!s.consent_msg_sent_at) todo.send.push({ s, due, daysLeft });
+    else if (daysLeft <= 3) todo.remind.push({ s, due, daysLeft });              // 보냈는데 결제일 임박 & 미동의
+  });
+  return todo;
+}
+
+function renderTodo() {
+  const panel = document.getElementById('todo-panel');
+  if (!panel) return;
+  const { send, remind } = consentTodo(subscribers);
+  if (!send.length && !remind.length) { panel.classList.remove('show'); return; }
+  document.getElementById('todo-title').textContent =
+    `📩 오늘 할 일 · 계속하기 문자 ${send.length}명${remind.length ? ` · 재안내 ${remind.length}명` : ''}`;
+  const row = ({ s, due, daysLeft }, kind) => `<div class="todo-item ${kind === 'remind' ? 'urgent' : ''}">
+      <div><b>${escHtml(s.name)}</b><small>${escHtml(s.phone || '')} · 결제일 ${fmtMD(due)} (D-${Math.max(daysLeft, 0)})${kind === 'remind' ? ' · 문자 보냈는데 아직 동의 안 함' : ''}</small></div>
+      <button class="action-btn btn-consent" onclick="copyConsentMessage('${s.id}')">${kind === 'remind' ? '다시 보내기' : '계속하기 문자'}</button>
+    </div>`;
+  document.getElementById('todo-list').innerHTML = send.map(x => row(x, 'send')).join('') + remind.map(x => row(x, 'remind')).join('');
+  panel.classList.add('show');
+}
+
+async function markConsentMsgSent(id) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ consent_msg_sent_at: new Date().toISOString() }),
+    });
+  } catch (e) {}
+  loadSubscribers();
+}
+
 // ===== 스피닝 첫 달 50% → '계속하기' 동의 문자 =====
 // 결제일 2주 전부터 동의 가능. 동의 안 하면 결제일에 결제 없이 자동 종료(서버).
 async function copyConsentMessage(id) {
@@ -703,6 +762,7 @@ async function copyConsentMessage(id) {
   } catch (e) {
     prompt('아래 내용을 복사해서 보내주세요.', msg);
   }
+  if (!opens || new Date() >= opens) markConsentMsgSent(s.id);   // 안내 기간에 복사한 경우만 '보냄'으로 표시
 }
 
 // ===== 추가 옵션 (개인락커 · 운동복·수건) =====
@@ -1144,9 +1204,35 @@ window.addEventListener('focus', () => { if (unseenSignupCount && !document.getE
 
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
+// 하루 한 번(이 컴퓨터 기준) '계속하기 문자 보낼 회원' 컴퓨터 알림
+const CONSENT_TODO_KEY = 'admin_consent_todo_notified';
+async function checkConsentTodo() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,promo,status,next_billing_date,price_consent_at,consent_msg_sent_at&promo=not.is.null&price_consent_at=is.null&status=eq.active`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (!res.ok) return;
+    const { send, remind } = consentTodo(await res.json());
+    const n = send.length + remind.length;
+    if (!n) return;
+    const today = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
+    const key = `${today}|${send.map(x => x.s.id).join(',')}|${remind.map(x => x.s.id).join(',')}`;
+    if (lsGet(CONSENT_TODO_KEY) === key) return;   // 오늘 같은 목록으로 이미 알림
+    lsSet(CONSENT_TODO_KEY, key);
+    const loggedIn = isLoggedIn();
+    const who = loggedIn ? [...send, ...remind].map(x => x.s.name).join(', ') : `${n}명`;
+    const text = `계속하기 문자 보낼 회원 ${send.length}명${remind.length ? ` · 결제일 임박 재안내 ${remind.length}명` : ''}`;
+    showSignupToast(`📩 ${text}${loggedIn ? ` — <b>${escHtml(who)}</b>` : ' — 로그인해서 확인하세요'}`);
+    if (lsGet(SIGNUP_ALERT_KEY) === '1') {
+      showDesktopNotice('📩 990짐 오늘 할 일', `${text}\n${who}`);
+      playSignupSound();
+    }
+  } catch (e) {}
+}
+
 async function checkNewSignups() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,plan,status,created_at&order=created_at.desc&limit=30`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,plan,status,created_at,promo&order=created_at.desc&limit=30`, {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
     });
     if (!res.ok) return;
@@ -1168,7 +1254,7 @@ async function checkNewSignups() {
     unseenSignupCount += fresh.length;
     document.title = `(${unseenSignupCount}) 신규 구독 · ${BASE_TITLE}`;
     const loggedIn = isLoggedIn();
-    const label = (r) => `${r.name} · ${r.plan}`;
+    const label = (r) => `${r.name} · ${r.plan}${r.promo ? '(스피닝 첫달50%)' : ''}`;
     const summary = loggedIn
       ? (fresh.length === 1 ? label(fresh[0]) : `${label(fresh[0])} 외 ${fresh.length - 1}명`)
       : `${fresh.length}명 (로그인해서 확인하세요)`;
@@ -1187,6 +1273,8 @@ async function checkNewSignups() {
 renderSignupAlertBtn();
 checkNewSignups();
 setInterval(checkNewSignups, SIGNUP_POLL_MS);
+checkConsentTodo();
+setInterval(checkConsentTodo, 10 * 60 * 1000);   // 10분마다 확인 (알림은 하루 한 번)
 </script>
 </body>
 </html>
