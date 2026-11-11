@@ -383,7 +383,7 @@ const monthlyAmount = (s) => (PLAN_PRICES[s.plan] || 0) + validAddons(s).reduce(
 const isPromoWaiting = (s) => !!s.promo && !s.price_consent_at;
 const expectedAmount = (s) => (isPromoWaiting(s) ? 0 : monthlyAmount(s));
 const CHURN_REASONS = ['기간권 전환', '이사', '개인사정', '운동중단', '부상', '가격 부담', '타 시설 이동', '기타'];
-const SESSION_TIMEOUT = 30 * 60 * 1000;
+const SESSION_TIMEOUT = 2 * 60 * 60 * 1000;   // 2시간 동안 아무 조작이 없으면 자동 로그아웃 (인포 데스크라 회원 정보 보호)
 
 let currentAction = null;
 let currentPlanAction = null;
@@ -426,7 +426,7 @@ function startSessionTimer() {
     if (remaining <= 0) { doLogout(true); return; }
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
-    document.getElementById('session-timer').textContent = `${mins}:${secs.toString().padStart(2,'0')} 후 자동 로그아웃`;
+    document.getElementById('session-timer').textContent = `${remaining >= 3600000 ? `${Math.floor(remaining / 3600000)}시간 ${Math.floor(remaining % 3600000 / 60000)}분` : `${Math.ceil(remaining / 60000)}분`} 후 자동 로그아웃`;
   }, 1000);
 }
 
@@ -446,7 +446,7 @@ function doLogout(auto) {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-screen').style.display = 'none';
   document.getElementById('pw-input').value = '';
-  if (auto) alert('30분 동안 활동이 없어 자동 로그아웃되었습니다.');
+  if (auto) alert('2시간 동안 활동이 없어 자동 로그아웃되었습니다.');
 }
 
 window.addEventListener('load', function() {
