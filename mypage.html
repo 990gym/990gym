@@ -164,8 +164,8 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
+// 구독 조회는 서버(api/my-subscription)를 거친다. 페이지에는 DB 열쇠가 없다.
+const VERCEL_URL = 'https://project-ps3ps.vercel.app';
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
 
 function formatPhone(input) {
@@ -189,10 +189,14 @@ async function doSearch() {
 
   try {
     const phoneClean = phone.replace(/-/g, '');
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?name=eq.${encodeURIComponent(name)}&phone=eq.${phoneClean}&select=*`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    const res = await fetch(`${VERCEL_URL}/api/my-subscription`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone: phoneClean }),
     });
-    const data = await res.json();
+    if (![200, 400, 404].includes(res.status)) throw new Error(`HTTP ${res.status}`);
+    const out = await res.json().catch(() => ({}));
+    const data = out.subscriber ? [out.subscriber] : [];
 
     if (!data || data.length === 0) {
       errMsg.style.display = 'block';
@@ -230,7 +234,7 @@ function showMypage(sub) {
     document.getElementById('my-next').textContent = '-';
   }
 
-  const amount = PLAN_PRICES[sub.plan] || 0;
+  const amount = sub.amount || PLAN_PRICES[sub.plan] || 0;
   document.getElementById('my-amount').textContent = amount.toLocaleString() + '원';
   document.getElementById('my-start').textContent = new Date(sub.created_at).toLocaleDateString('ko-KR');
 }

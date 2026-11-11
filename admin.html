@@ -337,12 +337,28 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
 const VERCEL_URL = 'https://project-ps3ps.vercel.app';
-const ADMIN_PW = '990gym2026!';
+
+// 모든 데이터 작업은 서버(990gym-server/api/admin)를 거친다.
+// 비밀번호는 서버(Vercel 환경변수 ADMIN_PASSWORD)에만 있고, 로그인하면 12시간짜리 토큰을 받는다.
+function adminToken() { try { return sessionStorage.getItem('admin_token'); } catch (e) { return null; } }
+async function api(action, params = {}) {
+  const token = adminToken();
+  const res = await fetch(`${VERCEL_URL}/api/admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && action !== 'login' && action !== 'pulse') {
+    if (isLoggedIn()) { doLogout(false); alert('로그인이 만료됐어요. 다시 로그인해 주세요.'); }
+    throw new Error('unauthorized');
+  }
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
-// 애드온 (서버 990gym-server/lib/pricing.js 와 같은 값)
+// 애드온 (서버 990gym-server/api/_pricing.js 와 같은 값)
 const ADDONS = { locker: { name: '개인락커', short: '락커', price: 10000 }, wear: { name: '운동복·수건', short: '운동복', price: 10000 } };
 const PLAN_ADDONS = { '베이직': ['locker', 'wear'], '스탠다드': ['locker'], '프리미엄': ['locker'] };
 const validAddons = (s) => (Array.isArray(s.addons) ? s.addons : []).filter(a => (PLAN_ADDONS[s.plan] || []).includes(a));
@@ -359,15 +375,20 @@ let subscribers = [];
 let sessionInterval = null;
 let sessionExpiry = null;
 
-function doLogin() {
+async function doLogin() {
   const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PW) {
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const { token } = await api('login', { password: pw });
+    sessionStorage.setItem('admin_token', token);
     sessionStorage.setItem('admin_logged_in', '1');
     sessionExpiry = Date.now() + SESSION_TIMEOUT;
     sessionStorage.setItem('admin_expiry', sessionExpiry);
     showAdmin();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+  } catch (e) {
+    errEl.textContent = e.message === 'Failed to fetch' ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' : (e.message || '비밀번호가 올바르지 않습니다.');
+    errEl.style.display = 'block';
   }
 }
 
@@ -399,6 +420,7 @@ function resetSessionTimer() {
 }
 
 function doLogout(auto) {
+  sessionStorage.removeItem('admin_token');
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
@@ -414,7 +436,7 @@ function doLogout(auto) {
 window.addEventListener('load', function() {
   const loggedIn = sessionStorage.getItem('admin_logged_in');
   const expiry = parseInt(sessionStorage.getItem('admin_expiry'));
-  if (loggedIn && expiry && Date.now() < expiry) {
+  if (loggedIn && adminToken() && expiry && Date.now() < expiry) {
     sessionExpiry = expiry;
     showAdmin();
   }
@@ -422,11 +444,7 @@ window.addEventListener('load', function() {
 
 async function loadInquiryCount() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=id,contacted&contacted=eq.false`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    const data = await res.json();
-    const count = Array.isArray(data) ? data.length : 0;
+    const count = (await api('inquiryCount')).pending || 0;
     document.getElementById('inquiry-count').textContent = count > 0 ? `(${count})` : '';
   } catch(e) {}
 }
@@ -434,11 +452,7 @@ async function loadInquiryCount() {
 async function loadSubscribers() {
   document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=*&order=created_at.desc`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    subscribers = await res.json();
+    subscribers = (await api('listSubscribers')).subscribers || [];
     renderTable();
     renderStats();
     renderTodo();
@@ -459,6 +473,9 @@ function renderStats() {
   document.getElementById('stat-revenue').textContent = revenue.toLocaleString();
 }
 
+// 이름은 버튼 onclick 에 직접 넣지 않는다 (이름에 ' 나 코드가 들어 있어도 안전하게)
+function nameOf(id) { const s = subscribers.find(x => String(x.id) === String(id)); return s ? (s.name || '-') : '-'; }
+
 function renderTable() {
   if (!subscribers.length) {
     document.getElementById('table-body').innerHTML = '<div class="empty">등록된 구독자가 없습니다.</div>';
@@ -475,13 +492,13 @@ function renderTable() {
         ? '<span class="badge badge-failed">결제실패</span>'
         : '<span class="badge badge-cancelled">해지</span>';
     const actionBtns = s.status === 'active'
-      ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
+      ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', nameOf('${s.id}'), '${s.plan}')">플랜변경</button>
          ${isPromoWaiting(s)
            ? `<button class="action-btn btn-consent" onclick="copyConsentMessage('${s.id}')">계속하기 문자</button>`
            : `<button class="action-btn btn-addon" onclick="openAddonModal('${s.id}')">옵션</button>`}
          <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
-         <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
-      : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
+         <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', nameOf('${s.id}'))">해지</button>`
+      : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', nameOf('${s.id}'))">복구</button>`;
     let churnCell = '-';
     if (s.status === 'cancelled') {
       const cur = s.churn_reason || '';
@@ -490,14 +507,14 @@ function renderTable() {
         opts += `<option value="${r}" ${cur===r?'selected':''}>${r}</option>`;
       });
       if (cur && !CHURN_REASONS.includes(cur)) {
-        opts += `<option value="${cur}" selected>${cur}</option>`;
+        opts += `<option value="${escHtml(cur)}" selected>${escHtml(cur)}</option>`;
       }
       churnCell = `<select class="churn-inline" onchange="onChurnInlineChange('${s.id}', this.value, this)">${opts}</select>`;
     }
     html += `<tr>
       <td class="col-name" data-label="이름"><button class="name-link" onclick="openHistory('${s.id}')" title="구독 이력 보기">${escHtml(s.name||'-')}</button></td>
-      <td class="col-phone" data-label="연락처">${s.phone||'-'}</td>
-      <td class="col-email" data-label="이메일">${s.email||'-'}</td>
+      <td class="col-phone" data-label="연락처">${escHtml(s.phone||'-')}</td>
+      <td class="col-email" data-label="이메일">${escHtml(s.email||'-')}</td>
       <td data-label="플랜">${s.plan||'-'}${validAddons(s).map(a => `<span class="addon-tag">+${ADDONS[a].short}</span>`).join('')}${s.promo ? (s.price_consent_at ? '<span class="promo-tag promo-ok">첫달50% · 정가동의</span>' : '<span class="promo-tag promo-wait">첫달50% · 동의대기</span>') : ''}</td>
       <td data-label="상태">${statusBadge}</td>
       <td class="col-churn" data-label="이탈사유">${churnCell}</td>
@@ -540,6 +557,9 @@ function openActivateModal(id, name) {
 function closeModal() {
   document.getElementById('confirm-modal').classList.remove('active');
   document.getElementById('churn-reason-wrap').style.display = 'none';
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.disabled = false;
+  btn.textContent = '확인';
   currentAction = null;
 }
 
@@ -556,18 +576,9 @@ function toggleChurnEtc() {
 async function updateChurnReason(id, reason, el) {
   el.disabled = true;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ churn_reason: reason || null }),
-    });
+    const res = await api('updateSubscriber', { id, fields: { churn_reason: reason || null } }).then(() => ({ ok: true }), () => ({ ok: false }));
     el.disabled = false;
-    if (res.ok || res.status === 204) {
+    if (res.ok) {
       const sub = subscribers.find(x => x.id === id);
       if (sub) sub.churn_reason = reason || null;
       renderTable();
@@ -610,29 +621,8 @@ async function confirmAction() {
     }
   }
   try {
-    const res = await fetch(`${VERCEL_URL}/api/cancel-subscriber`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: newStatus })
-    });
-    const data = await res.json();
+    const data = await api('setStatus', { id, status: newStatus, churn_reason: churnReason }).catch(e => ({ error: e.message }));
     if (data.success) {
-      // 해지일 기록 (해지 시에만, 복구 시엔 null로 초기화)
-      const patchBody = type === 'cancel'
-        ? { churn_reason: churnReason, cancelled_at: new Date().toISOString() }
-        : { churn_reason: null, cancelled_at: null };
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
-          method: 'PATCH',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify(patchBody),
-        });
-      } catch(e) {}
       closeModal();
       loadSubscribers();
     } else {
@@ -675,18 +665,9 @@ async function confirmPlanChange() {
   const actionName = action.name;
   const actionId = action.id;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${actionId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ plan: newPlan }),
-    });
+    const res = await api('updateSubscriber', { id: actionId, fields: { plan: newPlan } }).then(() => ({ ok: true }), () => ({ ok: false }));
     closePlanModal();
-    if (res.ok || res.status === 204) {
+    if (res.ok) {
       loadSubscribers();
       alert(`${actionName}님 플랜이 ${newPlan}으로 변경되었습니다. 다음 결제일부터 적용됩니다.`);
     } else {
@@ -733,11 +714,7 @@ function renderTodo() {
 
 async function markConsentMsgSent(id) {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ consent_msg_sent_at: new Date().toISOString() }),
-    });
+    await api('updateSubscriber', { id, fields: { consent_msg_sent: true } });
   } catch (e) {}
   loadSubscribers();
 }
@@ -805,23 +782,14 @@ async function confirmAddonChange() {
   btn.disabled = true;
   btn.textContent = '처리중...';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${s.id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ addons: picked }),
-    });
+    const res = await api('updateSubscriber', { id: s.id, fields: { addons: picked } }).then(() => ({ ok: true }), () => ({ ok: false }));
     closeAddonModal();
-    if (res.ok || res.status === 204) {
+    if (res.ok) {
       loadSubscribers();
       const label = picked.length ? picked.map(a => ADDONS[a].name).join(', ') : '옵션 없음';
       alert(`${s.name}님 추가 옵션: ${label}\n다음 결제일부터 월 ${monthlyAmount({ plan: s.plan, addons: picked }).toLocaleString()}원으로 청구됩니다.`);
     } else {
-      alert('옵션 변경에 실패했습니다. (Supabase에 addons 칸이 추가됐는지 확인해주세요)');
+      alert('옵션 변경에 실패했습니다.');
     }
   } catch (e) {
     alert('오류: ' + e.message);
@@ -884,11 +852,9 @@ async function openHistory(id) {
 
   let events = null, tableMissing = false;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscription_events?subscriber_id=eq.${encodeURIComponent(id)}&select=*&order=occurred_at.asc,id.asc`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (res.ok) events = await res.json();
-    else tableMissing = true;
+    const out = await api('listEvents', { subscriberId: id });
+    if (out.missing) tableMissing = true;
+    else events = out.events;
   } catch (e) { tableMissing = true; }
   if (!Array.isArray(events) || !events.length) events = fallbackEvents(s);
   renderHistory(s, events, tableMissing);
@@ -1075,19 +1041,8 @@ async function confirmBillingChange() {
   btn.textContent = '처리중...';
   const { id, name } = a;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify({ next_billing_date: newDate }),
-    });
-    // 저장된 값을 돌려받아 실제로 바뀌었는지 확인 (권한 문제로 0건 수정돼도 200이 오기 때문)
-    const rows = res.ok ? await res.json().catch(() => []) : [];
-    const saved = Array.isArray(rows) && rows[0] && String(rows[0].next_billing_date).slice(0, 10);
+    const out = await api('updateSubscriber', { id, fields: { next_billing_date: newDate } }).catch(() => ({}));
+    const saved = out.subscriber && String(out.subscriber.next_billing_date).slice(0, 10);
     closeBillingModal();
     if (saved === newDate) {
       loadSubscribers();
@@ -1208,18 +1163,15 @@ const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', 
 const CONSENT_TODO_KEY = 'admin_consent_todo_notified';
 async function checkConsentTodo() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,promo,status,next_billing_date,price_consent_at,consent_msg_sent_at&promo=not.is.null&price_consent_at=is.null&status=eq.active`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!res.ok) return;
-    const { send, remind } = consentTodo(await res.json());
+    const p = await api('pulse');
+    const { send, remind } = consentTodo(p.consentTodo || []);
     const n = send.length + remind.length;
     if (!n) return;
     const today = new Date().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
     const key = `${today}|${send.map(x => x.s.id).join(',')}|${remind.map(x => x.s.id).join(',')}`;
     if (lsGet(CONSENT_TODO_KEY) === key) return;   // 오늘 같은 목록으로 이미 알림
     lsSet(CONSENT_TODO_KEY, key);
-    const loggedIn = isLoggedIn();
+    const loggedIn = isLoggedIn() && p.authed;
     const who = loggedIn ? [...send, ...remind].map(x => x.s.name).join(', ') : `${n}명`;
     const text = `계속하기 문자 보낼 회원 ${send.length}명${remind.length ? ` · 결제일 임박 재안내 ${remind.length}명` : ''}`;
     showSignupToast(`📩 ${text}${loggedIn ? ` — <b>${escHtml(who)}</b>` : ' — 로그인해서 확인하세요'}`);
@@ -1232,11 +1184,8 @@ async function checkConsentTodo() {
 
 async function checkNewSignups() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?select=id,name,plan,status,created_at,promo&order=created_at.desc&limit=30`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!res.ok) return;
-    const rows = await res.json();
+    const p = await api('pulse');
+    const rows = p.signups;
     if (!Array.isArray(rows) || !rows.length) return;
     const t = (r) => Date.parse(r.created_at) || 0;
     const newest = Math.max(...rows.map(t));
@@ -1253,7 +1202,7 @@ async function checkNewSignups() {
 
     unseenSignupCount += fresh.length;
     document.title = `(${unseenSignupCount}) 신규 구독 · ${BASE_TITLE}`;
-    const loggedIn = isLoggedIn();
+    const loggedIn = isLoggedIn() && p.authed;
     const label = (r) => `${r.name} · ${r.plan}${r.promo ? '(스피닝 첫달50%)' : ''}`;
     const summary = loggedIn
       ? (fresh.length === 1 ? label(fresh[0]) : `${label(fresh[0])} 외 ${fresh.length - 1}명`)

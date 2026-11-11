@@ -121,23 +121,42 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
-const ADMIN_PW = '990gym2026!';
+const VERCEL_URL = 'https://project-ps3ps.vercel.app';
+
+// 데이터 작업은 서버(api/admin)를 거친다. 로그인은 admin 페이지와 공유된다.
+function adminToken() { try { return sessionStorage.getItem('admin_token'); } catch (e) { return null; } }
+async function api(action, params = {}) {
+  const token = adminToken();
+  const res = await fetch(`${VERCEL_URL}/api/admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && action !== 'login') { doLogout(false); alert('로그인이 만료됐어요. 다시 로그인해 주세요.'); throw new Error('unauthorized'); }
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
 let sessionInterval = null;
 let sessionExpiry = null;
 
-function doLogin() {
+async function doLogin() {
   const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PW) {
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const { token } = await api('login', { password: pw });
+    sessionStorage.setItem('admin_token', token);
     sessionStorage.setItem('admin_logged_in', '1');
     sessionExpiry = Date.now() + SESSION_TIMEOUT;
     sessionStorage.setItem('admin_expiry', sessionExpiry);
     showAdmin();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+  } catch (e) {
+    errEl.textContent = e.message === 'Failed to fetch' ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' : (e.message || '비밀번호가 올바르지 않습니다.');
+    errEl.style.display = 'block';
   }
 }
 
@@ -168,6 +187,7 @@ function resetSessionTimer() {
 }
 
 function doLogout(auto) {
+  sessionStorage.removeItem('admin_token');
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
@@ -180,7 +200,7 @@ function doLogout(auto) {
 window.addEventListener('load', function() {
   const loggedIn = sessionStorage.getItem('admin_logged_in');
   const expiry = parseInt(sessionStorage.getItem('admin_expiry'));
-  if (loggedIn && expiry && Date.now() < expiry) {
+  if (loggedIn && adminToken() && expiry && Date.now() < expiry) {
     sessionExpiry = expiry;
     showAdmin();
   }
@@ -189,11 +209,7 @@ window.addEventListener('load', function() {
 async function loadInquiries() {
   document.getElementById('inquiry-body').innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/inquiries?select=*&order=created_at.desc`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const inquiries = await res.json();
+    const inquiries = (await api('listInquiries')).inquiries || [];
 
     const total = inquiries.length;
     const pending = inquiries.filter(i => !i.contacted).length;
@@ -216,7 +232,7 @@ async function loadInquiries() {
       const actionBtn = i.contacted
         ? `<button class="action-btn btn-undo" onclick="toggleContacted('${i.id}', false)">미처리</button>`
         : `<button class="action-btn btn-done" onclick="toggleContacted('${i.id}', true)">연락완료</button>`;
-      html += `<tr><td><strong>${i.name}</strong></td><td>${i.phone}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
+      html += `<tr><td><strong>${escHtml(i.name)}</strong></td><td>${escHtml(i.phone)}</td><td>${date}</td><td>${statusBadge}</td><td>${actionBtn}</td></tr>`;
     });
     html += '</tbody></table>';
     document.getElementById('inquiry-body').innerHTML = html;
@@ -227,19 +243,10 @@ async function loadInquiries() {
 
 async function toggleContacted(id, contacted) {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/inquiries?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ contacted }),
-    });
+    await api('setInquiryContacted', { id, contacted });
     loadInquiries();
   } catch(e) {
-    alert('오류가 발생했습니다.');
+    if (e.message !== 'unauthorized') alert('오류가 발생했습니다.');
   }
 }
 </script>

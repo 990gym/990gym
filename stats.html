@@ -170,9 +170,21 @@
 <div class="tip" id="tip"></div>
 
 <script>
-const SUPABASE_URL = 'https://twwpxtveupsqwenkprdw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3d3B4dHZldXBzcXdlbmtwcmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTcyNjYsImV4cCI6MjA4OTIzMzI2Nn0.uoDrUFNiLhDVTHDeGOWPBeQCeI5kzTOP678r9rLbioM';
-const ADMIN_PW = '990gym2026!';
+const VERCEL_URL = 'https://project-ps3ps.vercel.app';
+// 데이터는 서버(api/admin)를 거친다. 로그인은 admin 페이지와 공유된다.
+function adminToken() { try { return sessionStorage.getItem('admin_token'); } catch (e) { return null; } }
+async function api(action, params = {}) {
+  const token = adminToken();
+  const res = await fetch(`${VERCEL_URL}/api/admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ action, ...params }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && action !== 'login') { doLogout(false); alert('로그인이 만료됐어요. 다시 로그인해 주세요.'); throw new Error('unauthorized'); }
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
 const PLAN_ORDER = ['베이직', '스탠다드', '프리미엄'];
 const PLAN_COLOR = { '베이직': 'var(--s-basic)', '스탠다드': 'var(--s-standard)', '프리미엄': 'var(--s-premium)' };
@@ -183,14 +195,19 @@ const KST = 9 * 3600e3;
 
 // ================= 로그인 (admin.html 과 같은 세션 공유) =================
 let sessionInterval = null, sessionExpiry = null;
-function doLogin() {
-  if (document.getElementById('pw-input').value === ADMIN_PW) {
+async function doLogin() {
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const { token } = await api('login', { password: document.getElementById('pw-input').value });
+    sessionStorage.setItem('admin_token', token);
     sessionStorage.setItem('admin_logged_in', '1');
     sessionExpiry = Date.now() + SESSION_TIMEOUT;
     sessionStorage.setItem('admin_expiry', sessionExpiry);
     showAdmin();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+  } catch (e) {
+    errEl.textContent = e.message === 'Failed to fetch' ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' : (e.message || '비밀번호가 올바르지 않습니다.');
+    errEl.style.display = 'block';
   }
 }
 function showAdmin() {
@@ -211,6 +228,7 @@ function resetSessionTimer() {
   sessionStorage.setItem('admin_expiry', sessionExpiry);
 }
 function doLogout(auto) {
+  sessionStorage.removeItem('admin_token');
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
@@ -223,7 +241,7 @@ function doLogout(auto) {
 window.addEventListener('load', () => {
   const ok = sessionStorage.getItem('admin_logged_in');
   const exp = parseInt(sessionStorage.getItem('admin_expiry'));
-  if (ok && exp && Date.now() < exp) { sessionExpiry = exp; showAdmin(); }
+  if (ok && adminToken() && exp && Date.now() < exp) { sessionExpiry = exp; showAdmin(); }
 });
 
 // ================= 공통 =================
@@ -250,19 +268,6 @@ function addMonths(t, k) {
   return Date.UTC(y, m, Math.min(day, last), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()) - KST;
 }
 function kstDay(t) { const d = new Date(t + KST); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; }
-
-async function fetchAll(path) {
-  const out = [];
-  for (let from = 0; ; from += 1000) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Range-Unit': 'items', 'Range': `${from}-${from + 999}` }
-    });
-    if (!res.ok) throw new Error(`${path.split('?')[0]} HTTP ${res.status}`);
-    const rows = await res.json();
-    out.push(...rows);
-    if (rows.length < 1000) return out;
-  }
-}
 
 // ================= 데이터 → 구독 구간 =================
 // 회원마다 이력을 시간순으로 따라가며 "구독 중이던 구간"을 만든다.
@@ -648,10 +653,7 @@ async function loadAll() {
   const content = document.getElementById('content');
   content.innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    const [subs, events] = await Promise.all([
-      fetchAll('subscribers?select=id,name,plan,status,created_at,cancelled_at,churn_reason&order=created_at.asc'),
-      fetchAll('subscription_events?select=*&order=occurred_at.asc,id.asc').catch(() => [])
-    ]);
+    const { subscribers: subs, events } = await api('statsData');
     STATS = computeStats(subs, events);
     if (!STATS) { content.innerHTML = '<div class="loading">아직 구독 데이터가 없습니다.</div>'; return; }
     STATS.noEvents = !events.length;
