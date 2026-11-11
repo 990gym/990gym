@@ -438,6 +438,9 @@ function resetSessionTimer() {
 
 function doLogout(auto) {
   sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem(LIST_CACHE_KEY);
+  subscribers = [];
+  eventsBySub = null;
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
@@ -466,22 +469,35 @@ async function loadInquiryCount() {
   } catch(e) {}
 }
 
+// 새로고침해도 바로 보이게: 마지막으로 받은 목록을 이 탭에만 잠깐 보관해 두고 먼저 그린 뒤,
+// 서버에서 최신 목록이 오면 조용히 바꿔 그린다. (탭을 닫거나 로그아웃하면 지워짐)
+const LIST_CACHE_KEY = 'admin_list_cache';
+function applyList(out) {
+  subscribers = out.subscribers || [];
+  // 구독 이력도 목록과 함께 미리 받아 둔다 → 이름을 누르면 바로 열림
+  eventsBySub = null;
+  if (Array.isArray(out.events)) {
+    eventsBySub = {};
+    out.events.forEach(e => { (eventsBySub[e.subscriber_id] = eventsBySub[e.subscriber_id] || []).push(e); });
+  }
+  renderTable();
+  renderStats();
+  renderTodo();
+}
+
 async function loadSubscribers() {
-  document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
+  if (!subscribers.length) {
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(LIST_CACHE_KEY) || 'null'); } catch (e) {}
+    if (cached) applyList(cached);
+    else document.getElementById('table-body').innerHTML = '<div class="loading">불러오는 중...</div>';
+  }
   try {
     const out = await api('listSubscribers');
-    subscribers = out.subscribers || [];
-    // 구독 이력도 목록과 함께 미리 받아 둔다 → 이름을 누르면 바로 열림
-    eventsBySub = null;
-    if (Array.isArray(out.events)) {
-      eventsBySub = {};
-      out.events.forEach(e => { (eventsBySub[e.subscriber_id] = eventsBySub[e.subscriber_id] || []).push(e); });
-    }
-    renderTable();
-    renderStats();
-    renderTodo();
+    applyList(out);
+    try { sessionStorage.setItem(LIST_CACHE_KEY, JSON.stringify(out)); } catch (e) {}
   } catch(e) {
-    document.getElementById('table-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
+    if (!subscribers.length) document.getElementById('table-body').innerHTML = `<div class="empty">데이터를 불러오지 못했습니다.</div>`;
   }
 }
 
