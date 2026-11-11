@@ -229,6 +229,8 @@ function resetSessionTimer() {
 }
 function doLogout(auto) {
   sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem(STATS_CACHE_KEY);
+  sessionStorage.removeItem('admin_list_cache');
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
@@ -649,18 +651,35 @@ const tipRow = (color, name, val) => `<div class="row"><i style="background:${co
 
 // ================= 화면 =================
 let STATS = null;
+// 새로고침·페이지 이동 때 바로 보이게: 마지막 데이터(또는 관리자 화면이 받아 둔 목록)로 먼저 그리고,
+// 서버에서 최신 데이터가 오면 조용히 다시 그린다. (이 탭에만 보관, 로그아웃하면 지워짐)
+const STATS_CACHE_KEY = 'admin_stats_cache';
+function drawStats(subs, events) {
+  const content = document.getElementById('content');
+  STATS = computeStats(subs, events || []);
+  if (!STATS) { content.innerHTML = '<div class="loading">아직 구독 데이터가 없습니다.</div>'; return; }
+  STATS.noEvents = !(events || []).length;
+  render();
+}
+function cachedStatsData() {
+  const read = (k) => { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  return read(STATS_CACHE_KEY) || read('admin_list_cache');
+}
 async function loadAll() {
   const content = document.getElementById('content');
-  content.innerHTML = '<div class="loading">불러오는 중...</div>';
+  const cached = cachedStatsData();
+  let shown = false;
+  if (cached && Array.isArray(cached.subscribers) && cached.subscribers.length) {
+    try { drawStats(cached.subscribers, cached.events); shown = true; } catch (e) { console.error(e); }
+  }
+  if (!shown) content.innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    const { subscribers: subs, events } = await api('statsData');
-    STATS = computeStats(subs, events);
-    if (!STATS) { content.innerHTML = '<div class="loading">아직 구독 데이터가 없습니다.</div>'; return; }
-    STATS.noEvents = !events.length;
-    render();
+    const out = await api('statsData');
+    try { sessionStorage.setItem(STATS_CACHE_KEY, JSON.stringify(out)); } catch (e) {}
+    drawStats(out.subscribers, out.events);
   } catch (e) {
     console.error(e);
-    content.innerHTML = `<div class="loading">데이터를 불러오지 못했습니다. (${escHtml(e.message)})</div>`;
+    if (!shown) content.innerHTML = `<div class="loading">데이터를 불러오지 못했습니다. (${escHtml(e.message)})</div>`;
   }
 }
 

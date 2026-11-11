@@ -439,6 +439,7 @@ function resetSessionTimer() {
 function doLogout(auto) {
   sessionStorage.removeItem('admin_token');
   sessionStorage.removeItem(LIST_CACHE_KEY);
+  sessionStorage.removeItem('admin_stats_cache');
   subscribers = [];
   eventsBySub = null;
   sessionStorage.removeItem('admin_logged_in');

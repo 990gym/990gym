@@ -188,6 +188,8 @@ function resetSessionTimer() {
 
 function doLogout(auto) {
   sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_list_cache');
+  sessionStorage.removeItem('admin_stats_cache');
   sessionStorage.removeItem('admin_logged_in');
   sessionStorage.removeItem('admin_expiry');
   if (sessionInterval) clearInterval(sessionInterval);
