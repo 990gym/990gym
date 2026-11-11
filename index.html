@@ -189,6 +189,15 @@
   .pay-submit-btn:hover { background: var(--blue-dark); }
   .pay-submit-btn:disabled { background: #aaa; cursor: not-allowed; }
   .pay-note { font-size: 0.72rem; color: #aaa; text-align: center; margin-top: 0.8rem; line-height: 1.6; }
+  .pay-addons { border-top: 1px solid var(--border); margin-top: 0.4rem; padding-top: 1rem; }
+  .pay-addons-title { font-size: 0.78rem; font-weight: 700; color: #444; margin-bottom: 0.5rem; }
+  .pay-addon { display: flex; align-items: center; gap: 0.6rem; border: 1.5px solid var(--border); border-radius: 6px; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; cursor: pointer; font-size: 0.88rem; color: var(--black); }
+  .pay-addon input { width: 18px; height: 18px; accent-color: var(--blue); margin: 0; flex: 0 0 auto; }
+  .pay-addon span { flex: 1; }
+  .pay-addon em { font-style: normal; font-weight: 700; color: var(--blue); white-space: nowrap; }
+  .pay-addon:has(input:checked) { border-color: var(--blue); background: #f5f7ff; }
+  .pay-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.8rem; font-size: 0.85rem; color: var(--gray); }
+  .pay-total strong { font-size: 1.15rem; color: var(--black); }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -389,6 +398,11 @@
       <label class="pay-form-label">이메일</label>
       <input type="email" class="pay-form-input" id="pay-email" placeholder="example@email.com">
     </div>
+    <div class="pay-addons" id="pay-addons">
+      <div class="pay-addons-title">추가 옵션 (매월 함께 결제 · 언제든 빼기 가능)</div>
+      <div id="pay-addon-list"></div>
+    </div>
+    <div class="pay-total"><span>월 결제 금액</span><strong><span id="pay-total">0</span>원</strong></div>
     <div class="pay-btn-row">
       <button class="pay-cancel-btn" onclick="closePayModal()">취소</button>
       <button class="pay-submit-btn" id="pay-submit-btn" onclick="requestBilling()">카드 등록 & 구독 시작 →</button>
@@ -524,12 +538,15 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
       var name = params.get('name');
       var phone = params.get('phone');
       var email = params.get('email');
+      var addonsParam = params.get('addons');
+      var addons = addonsParam ? addonsParam.split(',').filter(Boolean) : null;
 
       // sessionStorage 백업에서 누락 정보 복구 (저장소 접근이 막혀도 URL 파라미터만으로 계속 진행)
       try {
         var pendingRaw = sessionStorage.getItem('pendingBilling');
         if (pendingRaw) {
           var pending = JSON.parse(pendingRaw);
+          if (addons === null && Array.isArray(pending.addons)) addons = pending.addons;
           plan = plan || pending.plan;
           name = name || pending.name;
           phone = phone || pending.phone;
@@ -557,7 +574,7 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
       fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email, addons: addons || [] })
       })
       .then(function(res) { return res.json(); })
       .then(function(data) {
@@ -580,10 +597,35 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
 })();
 var selectedPlan = { name: '', price: 0 };
 
+// 애드온 (금액은 서버 lib/pricing.js 와 같아야 함 — 실제 결제 금액은 서버가 다시 계산)
+var ADDONS = {
+  locker: { name: '개인락커', price: 10000 },
+  wear: { name: '운동복 · 수건 대여', price: 10000 }
+};
+var PLAN_ADDONS = { '베이직': ['locker', 'wear'], '스탠다드': ['locker'], '프리미엄': ['locker'] };
+
+function selectedAddons() {
+  var out = [];
+  document.querySelectorAll('#pay-addon-list input:checked').forEach(function(el) { out.push(el.value); });
+  return out;
+}
+
+function updatePayTotal() {
+  var total = selectedPlan.price;
+  selectedAddons().forEach(function(a) { total += ADDONS[a].price; });
+  document.getElementById('pay-total').textContent = total.toLocaleString();
+  document.getElementById('pay-plan-price').textContent = total.toLocaleString();
+}
+
 function openPayModal(planName, price) {
   selectedPlan = { name: planName, price: price };
   document.getElementById('pay-plan-name').textContent = planName;
-  document.getElementById('pay-plan-price').textContent = price.toLocaleString();
+  var keys = PLAN_ADDONS[planName] || [];
+  document.getElementById('pay-addon-list').innerHTML = keys.map(function(k) {
+    return '<label class="pay-addon"><input type="checkbox" value="' + k + '" onchange="updatePayTotal()"><span>' + ADDONS[k].name + '</span><em>+' + ADDONS[k].price.toLocaleString() + '원/월</em></label>';
+  }).join('');
+  document.getElementById('pay-addons').style.display = keys.length ? '' : 'none';
+  updatePayTotal();
   document.getElementById('pay-modal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -618,15 +660,16 @@ async function requestBilling() {
   var tossPayments = TossPayments(CLIENT_KEY);
 
   // 폼 정보를 sessionStorage에 백업 (URL params 누락 대비)
+  var addons = selectedAddons();
   try {
     sessionStorage.setItem('pendingBilling', JSON.stringify({
-      plan: selectedPlan.name, name: name, phone: phone, email: email, customerKey: customerKey
+      plan: selectedPlan.name, name: name, phone: phone, email: email, customerKey: customerKey, addons: addons
     }));
   } catch(e) {}
 
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&addons=' + encodeURIComponent(addons.join(',')) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
     failUrl: window.location.href.split('?')[0] + '?fail=1',
     customerName: name,
     customerEmail: email,

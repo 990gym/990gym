@@ -77,6 +77,11 @@
   .btn-activate { background: #dcfce7; color: #16a34a; }
   .btn-plan { background: #fef3c7; color: #d97706; }
   .btn-billing { background: #dbeafe; color: #2563eb; }
+  .btn-addon { background: #ede9fe; color: #7c3aed; }
+  .addon-tag { display: inline-block; margin: 2px 0 0 4px; padding: 1px 7px; border-radius: 10px; background: #ede9fe; color: #7c3aed; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .addon-opt { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .addon-opt input { width: 18px; height: 18px; margin: 0; }
+  .addon-opt span { flex: 1; }
   .modal-btn-confirm.blue { background: #2563eb; color: white; }
   .billing-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; }
   .billing-row label { width: 84px; color: var(--text-light); flex-shrink: 0; white-space: nowrap; }
@@ -273,6 +278,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="addon-modal">
+  <div class="modal">
+    <div class="modal-title">추가 옵션</div>
+    <div class="modal-desc" id="addon-modal-desc"></div>
+    <div id="addon-modal-list"></div>
+    <div style="font-size:12px;color:var(--text-light);margin-top:10px;">다음 결제일부터 바뀐 금액으로 청구됩니다. 이번 달 이미 결제된 금액은 그대로입니다.</div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closeAddonModal()">취소</button>
+      <button class="modal-btn modal-btn-confirm blue" id="addon-confirm-btn" onclick="confirmAddonChange()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="billing-modal">
   <div class="modal">
     <div class="modal-title">결제일 변경</div>
@@ -306,6 +324,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const VERCEL_URL = 'https://project-ps3ps.vercel.app';
 const ADMIN_PW = '990gym2026!';
 const PLAN_PRICES = { '베이직': 39000, '스탠다드': 69000, '프리미엄': 99000 };
+// 애드온 (서버 990gym-server/lib/pricing.js 와 같은 값)
+const ADDONS = { locker: { name: '개인락커', short: '락커', price: 10000 }, wear: { name: '운동복·수건', short: '운동복', price: 10000 } };
+const PLAN_ADDONS = { '베이직': ['locker', 'wear'], '스탠다드': ['locker'], '프리미엄': ['locker'] };
+const validAddons = (s) => (Array.isArray(s.addons) ? s.addons : []).filter(a => (PLAN_ADDONS[s.plan] || []).includes(a));
+const monthlyAmount = (s) => (PLAN_PRICES[s.plan] || 0) + validAddons(s).reduce((sum, a) => sum + ADDONS[a].price, 0);
 const CHURN_REASONS = ['기간권 전환', '이사', '개인사정', '운동중단', '부상', '가격 부담', '타 시설 이동', '기타'];
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
@@ -406,7 +429,7 @@ function renderStats() {
   const total = subscribers.length;
   const active = subscribers.filter(s => s.status === 'active').length;
   const cancelled = subscribers.filter(s => s.status === 'cancelled').length;
-  const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + (PLAN_PRICES[s.plan] || 0), 0);
+  const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + monthlyAmount(s), 0);
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-cancelled').textContent = cancelled;
@@ -431,6 +454,7 @@ function renderTable() {
         : '<span class="badge badge-cancelled">해지</span>';
     const actionBtns = s.status === 'active'
       ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
+         <button class="action-btn btn-addon" onclick="openAddonModal('${s.id}')">옵션</button>
          <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
          <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
@@ -450,7 +474,7 @@ function renderTable() {
       <td class="col-name" data-label="이름"><button class="name-link" onclick="openHistory('${s.id}')" title="구독 이력 보기">${escHtml(s.name||'-')}</button></td>
       <td class="col-phone" data-label="연락처">${s.phone||'-'}</td>
       <td class="col-email" data-label="이메일">${s.email||'-'}</td>
-      <td data-label="플랜">${s.plan||'-'}</td>
+      <td data-label="플랜">${s.plan||'-'}${validAddons(s).map(a => `<span class="addon-tag">+${ADDONS[a].short}</span>`).join('')}</td>
       <td data-label="상태">${statusBadge}</td>
       <td class="col-churn" data-label="이탈사유">${churnCell}</td>
       <td class="col-join" data-label="가입일">${date}</td>
@@ -647,6 +671,70 @@ async function confirmPlanChange() {
   } catch(e) {
     alert('오류: ' + e.message);
     closePlanModal();
+  }
+}
+
+// ===== 추가 옵션 (개인락커 · 운동복·수건) =====
+let currentAddonId = null;
+
+function addonPreview(s) {
+  const picked = [...document.querySelectorAll('#addon-modal-list input:checked')].map(el => el.value);
+  const total = monthlyAmount({ plan: s.plan, addons: picked });
+  document.getElementById('addon-modal-desc').textContent =
+    `${s.name}님 · ${s.plan} · 다음 결제부터 월 ${total.toLocaleString()}원`;
+}
+
+function openAddonModal(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) return;
+  currentAddonId = s.id;
+  const keys = PLAN_ADDONS[s.plan] || [];
+  const cur = validAddons(s);
+  document.getElementById('addon-modal-list').innerHTML = keys.length
+    ? keys.map(k => `<label class="addon-opt"><input type="checkbox" value="${k}" ${cur.includes(k) ? 'checked' : ''}><span>${ADDONS[k].name}</span><b>+${ADDONS[k].price.toLocaleString()}원/월</b></label>`).join('')
+    : '<div style="margin-top:10px;font-size:14px;color:var(--text-light);">이 플랜은 추가할 수 있는 옵션이 없습니다.</div>';
+  document.querySelectorAll('#addon-modal-list input').forEach(el => el.addEventListener('change', () => addonPreview(s)));
+  addonPreview(s);
+  document.getElementById('addon-modal').classList.add('active');
+}
+
+function closeAddonModal() {
+  document.getElementById('addon-modal').classList.remove('active');
+  const btn = document.getElementById('addon-confirm-btn');
+  btn.disabled = false;
+  btn.textContent = '저장';
+  currentAddonId = null;
+}
+
+async function confirmAddonChange() {
+  const s = subscribers.find(x => String(x.id) === String(currentAddonId));
+  if (!s) return;
+  const picked = [...document.querySelectorAll('#addon-modal-list input:checked')].map(el => el.value);
+  const btn = document.getElementById('addon-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${s.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ addons: picked }),
+    });
+    closeAddonModal();
+    if (res.ok || res.status === 204) {
+      loadSubscribers();
+      const label = picked.length ? picked.map(a => ADDONS[a].name).join(', ') : '옵션 없음';
+      alert(`${s.name}님 추가 옵션: ${label}\n다음 결제일부터 월 ${monthlyAmount({ plan: s.plan, addons: picked }).toLocaleString()}원으로 청구됩니다.`);
+    } else {
+      alert('옵션 변경에 실패했습니다. (Supabase에 addons 칸이 추가됐는지 확인해주세요)');
+    }
+  } catch (e) {
+    alert('오류: ' + e.message);
+    closeAddonModal();
   }
 }
 

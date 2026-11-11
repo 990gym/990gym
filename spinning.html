@@ -127,6 +127,11 @@
   .agree input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--pink); flex: 0 0 auto; }
   .agree a { color: #555; }
   .sheet .cta { margin-top: 0; }
+  .addon { display: flex; align-items: center; gap: 10px; border: 1.5px solid #dfe3ec; border-radius: 10px; padding: 12px 14px; margin: 4px 0 12px; cursor: pointer; font-size: 0.9rem; color: #222; }
+  .addon input { width: 18px; height: 18px; accent-color: var(--pink); margin: 0; flex: 0 0 auto; }
+  .addon span { flex: 1; }
+  .addon em { font-style: normal; font-weight: 700; color: var(--pink); white-space: nowrap; }
+  .addon:has(input:checked) { border-color: var(--pink); background: #fff5fa; }
   .sheet .cancel { display: block; width: 100%; margin-top: 8px; padding: 12px; background: none; border: none; font-family: inherit; font-size: 0.88rem; color: #888; cursor: pointer; }
 
   /* 완료 화면 */
@@ -330,13 +335,15 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
 <div class="sheet-bg" id="sheet-bg">
   <div class="sheet">
     <h3>990 스피닝 시작하기</h3>
-    <p class="info"><b>프리미엄</b> · 첫 달 <b>99,000원</b> (스피닝·GX 무제한 + 헬스)</p>
+    <p class="info"><b>프리미엄</b> · 월 <b class="js-total">99,000</b>원 (스피닝·GX 무제한 + 헬스)</p>
     <div class="fg"><label for="pay-name">이름</label><input type="text" id="pay-name" placeholder="홍길동" autocomplete="name"></div>
     <div class="fg"><label for="pay-phone">연락처</label><input type="tel" id="pay-phone" placeholder="010-0000-0000" autocomplete="tel" inputmode="numeric"></div>
     <div class="fg"><label for="pay-email">이메일</label><input type="email" id="pay-email" placeholder="example@email.com" autocomplete="email"></div>
+    <label class="addon"><input type="checkbox" id="addon-locker" value="locker" onchange="updateTotal()"><span>개인락커 추가</span><em>+10,000원/월</em></label>
     <div class="terms">
-      · 카드 등록 즉시 첫 달 99,000원이 결제돼요.<br>
-      · 다음 달부터 매월 같은 날짜에 99,000원이 자동결제돼요.<br>
+      · 카드 등록 즉시 첫 달 <span class="js-total">99,000</span>원이 결제돼요.<br>
+      · 다음 달부터 매월 같은 날짜에 <span class="js-total">99,000</span>원이 자동결제돼요.<br>
+      · 개인락커는 언제든 센터에 말씀하시면 다음 달부터 뺄 수 있어요.<br>
       · 무약정이며, 카카오톡·전화로 언제든 해지할 수 있어요.<br>
       · 결제 후 7일 이내 미이용 시 전액 환불돼요.
     </div>
@@ -359,11 +366,24 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
 <script>
 // 토스페이먼츠 빌링 (index.html과 동일한 키·서버 사용)
 var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
-var PLAN = { name: '프리미엄', price: 99000 }; // 서버(billing-confirm)는 플랜 이름으로 금액을 정함
+var PLAN = { name: '프리미엄', price: 99000 }; // 실제 결제 금액은 서버(lib/pricing.js)가 플랜+애드온으로 다시 계산
+var LOCKER_PRICE = 10000;
+
+function selectedAddons() {
+  return document.getElementById('addon-locker').checked ? ['locker'] : [];
+}
+function currentTotal() {
+  return PLAN.price + (selectedAddons().length ? LOCKER_PRICE : 0);
+}
+function updateTotal() {
+  var t = currentTotal().toLocaleString();
+  document.querySelectorAll('.js-total').forEach(function (el) { el.textContent = t; });
+}
 
 // 메타 픽셀이 설치돼 있으면 구매 이벤트 전송 (없으면 아무것도 안 함)
+var purchasedAmount = 0;
 function trackPurchase() {
-  try { if (window.fbq) fbq('track', 'Purchase', { value: PLAN.price, currency: 'KRW', content_name: 'spinning_premium' }); } catch (e) {}
+  try { if (window.fbq) fbq('track', 'Purchase', { value: purchasedAmount || PLAN.price, currency: 'KRW', content_name: 'spinning_premium' }); } catch (e) {}
 }
 
 // 결제 복귀 처리
@@ -386,11 +406,14 @@ function trackPurchase() {
       var name = params.get('name');
       var phone = params.get('phone');
       var email = params.get('email');
+      var addonsParam = params.get('addons');
+      var addons = addonsParam ? addonsParam.split(',').filter(Boolean) : null;
 
       try {
         var pendingRaw = sessionStorage.getItem('pendingBilling');
         if (pendingRaw) {
           var pending = JSON.parse(pendingRaw);
+          if (addons === null && Array.isArray(pending.addons)) addons = pending.addons;
           plan = plan || pending.plan;
           name = name || pending.name;
           phone = phone || pending.phone;
@@ -416,12 +439,13 @@ function trackPurchase() {
       fetch('https://project-ps3ps.vercel.app/api/billing-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email })
+        body: JSON.stringify({ authKey: authKey, customerKey: customerKey, plan: plan, name: name, phone: phone, email: email, addons: addons || [] })
       })
         .then(function (res) { return res.json(); })
         .then(function (data) {
           loadingDiv.remove();
           if (data.success) {
+            purchasedAmount = data.amount || 0;
             trackPurchase();
             document.getElementById('done').classList.add('active');
           } else {
@@ -475,16 +499,17 @@ function requestBilling() {
   var customerKey = 'cust-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   var tossPayments = TossPayments(CLIENT_KEY);
 
+  var addons = selectedAddons();
   try {
     sessionStorage.setItem('pendingBilling', JSON.stringify({
-      plan: PLAN.name, name: name, phone: phone, email: email, customerKey: customerKey
+      plan: PLAN.name, name: name, phone: phone, email: email, customerKey: customerKey, addons: addons
     }));
   } catch (e) {}
 
   var base = window.location.href.split('?')[0];
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: base + '?plan=' + encodeURIComponent(PLAN.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey),
+    successUrl: base + '?plan=' + encodeURIComponent(PLAN.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&addons=' + encodeURIComponent(addons.join(',')) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey),
     failUrl: base + '?fail=1',
     customerName: name,
     customerEmail: email,
