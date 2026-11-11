@@ -199,6 +199,7 @@
       <span class="session-timer" id="session-timer"></span>
       <a href="stats.html" class="header-link">📈 구독 추이</a>
       <a href="inquiry.html" class="header-link highlight">📋 상담 신청 <span id="inquiry-count"></span></a>
+      <button class="logout-btn" onclick="openPwModal()">🔑 비밀번호 변경</button>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
@@ -292,6 +293,21 @@
     <div class="modal-btns" style="margin-top:24px;">
       <button class="modal-btn modal-btn-cancel" onclick="closePlanModal()">취소</button>
       <button class="modal-btn modal-btn-confirm orange" id="plan-confirm-btn" onclick="confirmPlanChange()">변경</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal">
+    <div class="modal-title">관리자 비밀번호 변경</div>
+    <div class="modal-desc">바꾸면 다른 컴퓨터·휴대폰에서 로그인돼 있던 관리자 화면은 모두 로그아웃됩니다. 직원과 함께 쓰시면 새 비밀번호를 따로 알려주세요.</div>
+    <input type="password" class="plan-select" id="pw-current" placeholder="지금 비밀번호" autocomplete="current-password">
+    <input type="password" class="plan-select" id="pw-next" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password">
+    <input type="password" class="plan-select" id="pw-next2" placeholder="새 비밀번호 한 번 더" autocomplete="new-password" onkeydown="if(event.key==='Enter')confirmPwChange()">
+    <div class="login-error" id="pw-error"></div>
+    <div class="modal-btns" style="margin-top:24px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closePwModal()">취소</button>
+      <button class="modal-btn modal-btn-confirm orange" id="pw-confirm-btn" onclick="confirmPwChange()">변경</button>
     </div>
   </div>
 </div>
@@ -634,6 +650,43 @@ async function confirmAction() {
     alert('오류가 발생했습니다. 다시 시도해주세요.');
     btn.disabled = false;
     btn.textContent = '확인';
+  }
+}
+
+// ===== 관리자 비밀번호 변경 =====
+function openPwModal() {
+  ['pw-current', 'pw-next', 'pw-next2'].forEach(k => { document.getElementById(k).value = ''; });
+  document.getElementById('pw-error').style.display = 'none';
+  document.getElementById('pw-modal').classList.add('active');
+  document.getElementById('pw-current').focus();
+}
+function closePwModal() {
+  document.getElementById('pw-modal').classList.remove('active');
+  const btn = document.getElementById('pw-confirm-btn');
+  btn.disabled = false;
+  btn.textContent = '변경';
+}
+async function confirmPwChange() {
+  const current = document.getElementById('pw-current').value;
+  const next = document.getElementById('pw-next').value;
+  const next2 = document.getElementById('pw-next2').value;
+  const errEl = document.getElementById('pw-error');
+  const fail = (m) => { errEl.textContent = m; errEl.style.display = 'block'; };
+  if (!current || !next) return fail('칸을 모두 채워주세요.');
+  if (next.length < 8) return fail('새 비밀번호는 8자 이상으로 해주세요.');
+  if (next !== next2) return fail('새 비밀번호 두 칸이 서로 달라요.');
+  const btn = document.getElementById('pw-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리중...';
+  try {
+    const { token } = await api('changePassword', { current, next });
+    sessionStorage.setItem('admin_token', token);
+    closePwModal();
+    alert('비밀번호를 바꿨어요. 다음 로그인부터 새 비밀번호를 쓰세요.');
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '변경';
+    if (e.message !== 'unauthorized') fail(e.message || '바꾸지 못했어요. 다시 시도해주세요.');
   }
 }
 
