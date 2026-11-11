@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>990 스피닝 | 계속하기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151923;
+    --line: #262c3a;
+    --text: #f3f5fa;
+    --muted: #9aa3b5;
+    --pink: #ff2d95;
+    --violet: #7b5cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; min-height: 100vh; }
+  a { color: inherit; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px 48px; }
+  .top { padding: 18px 0; font-weight: 900; font-size: 1.15rem; }
+  .top span { color: var(--pink); }
+  h1 { font-size: 1.7rem; font-weight: 900; line-height: 1.3; letter-spacing: -1px; margin-top: 12px; }
+  .lead { margin-top: 10px; color: var(--muted); font-size: 0.95rem; }
+  .card { margin-top: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+  .row:last-child { border-bottom: none; }
+  .row span { color: var(--muted); }
+  .row b { text-align: right; }
+  .row b span { color: inherit; }
+  .row b.big { font-size: 1.15rem; color: var(--pink); }
+  .notice { margin-top: 16px; font-size: 0.84rem; color: var(--muted); line-height: 1.75; }
+  .notice b { color: var(--text); }
+  .agree { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; font-size: 0.9rem; }
+  .agree input { margin-top: 4px; width: 20px; height: 20px; accent-color: var(--pink); flex: 0 0 auto; }
+  .cta { display: block; width: 100%; margin-top: 16px; padding: 16px; border: none; border-radius: 12px; font-family: inherit; font-size: 1.05rem; font-weight: 900; color: #fff; background: linear-gradient(90deg, var(--pink), var(--violet)); cursor: pointer; }
+  .cta:disabled { opacity: 0.5; cursor: default; }
+  .sub { display: block; text-align: center; margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+  .msg { margin-top: 40px; text-align: center; }
+  .msg .icon { font-size: 2.6rem; }
+  .msg h2 { font-size: 1.4rem; font-weight: 900; margin-top: 10px; }
+  .msg p { margin-top: 8px; color: var(--muted); font-size: 0.92rem; }
+  .hide { display: none; }
+  footer { margin-top: 36px; font-size: 0.72rem; color: #6b7386; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">990<span>짐</span></div>
+
+  <div id="loading" class="msg"><p>불러오는 중이에요…</p></div>
+
+  <div id="error" class="msg hide">
+    <div class="icon">🙏</div>
+    <h2 id="error-title">링크를 확인할 수 없어요</h2>
+    <p id="error-text">문자로 받은 링크를 다시 눌러 주시거나, 센터로 문의해 주세요.</p>
+  </div>
+
+  <div id="form" class="hide">
+    <h1><span id="who"></span>님,<br>스피닝 계속 타실래요?</h1>
+    <p class="lead">첫 달 체험이 곧 끝나요. 계속하시려면 아래 내용을 확인하고 동의해 주세요.</p>
+
+    <div class="card">
+      <div class="row"><span>지금</span><b id="now-line"></b></div>
+      <div class="row"><span>바뀌는 금액</span><b class="big"><span id="price"></span>원 / 월</b></div>
+      <div class="row"><span>적용일</span><b id="due"></b></div>
+      <div class="row"><span>이용 내용</span><b>스피닝·GX 무제한 + 헬스</b></div>
+    </div>
+
+    <p class="notice">
+      · 동의하시면 <b id="due2"></b>부터 매월 같은 날짜에 <b><span id="price2"></span>원</b>이 등록하신 카드로 자동결제돼요.<br>
+      · 무약정이에요. 카카오톡 채널이나 전화(02-371-2684)로 언제든 해지할 수 있고, 해지하시면 다음 결제일부터 결제되지 않아요.<br>
+      · 동의하지 않으시면 <b id="due3"></b>에 추가 결제 없이 첫 달로 종료돼요.
+    </p>
+
+    <label class="agree"><input type="checkbox" id="agree"><span>위 내용(<span id="due4"></span>부터 월 <span id="price3"></span>원 자동결제)을 확인했고 동의해요.</span></label>
+    <button class="cta" id="go" onclick="consent()">동의하고 계속하기</button>
+    <a class="sub" href="http://pf.kakao.com/_SxakPn" target="_blank">그만하실 거면 아무것도 안 하셔도 돼요 · 문의하기</a>
+  </div>
+
+  <div id="done" class="msg hide">
+    <div class="icon">🚴</div>
+    <h2>계속 함께해요!</h2>
+    <p id="done-text"></p>
+  </div>
+
+  <footer>990짐 | 대표자 노준석 | 사업자등록번호 177-12-02806 | 경기도 고양시 덕양구 권율대로 900, 7층 | 02-371-2684</footer>
+</div>
+
+<script>
+var API = 'https://project-ps3ps.vercel.app/api/price-consent';
+var token = new URLSearchParams(location.search).get('t') || '';
+
+function $(id) { return document.getElementById(id); }
+function show(id) { ['loading', 'error', 'form', 'done'].forEach(function (k) { $(k).classList.toggle('hide', k !== id); }); }
+function won(n) { return Number(n || 0).toLocaleString(); }
+function ymd(d) {
+  if (!d) return '-';
+  var p = String(d).slice(0, 10).split('-');
+  return Number(p[1]) + '월 ' + Number(p[2]) + '일';
+}
+function fail(title, text) { $('error-title').textContent = title; if (text) $('error-text').textContent = text; show('error'); }
+
+function render(v) {
+  if (v.consented) {
+    $('done-text').textContent = ymd(v.nextBillingDate) + '부터 매월 ' + won(v.price) + '원으로 이어서 이용하실 수 있어요. 해지는 언제든 카카오톡·전화로 말씀해 주세요.';
+    show('done');
+    return;
+  }
+  if (v.status !== 'active') { fail('이미 종료된 구독이에요', '다시 시작하시려면 센터로 문의해 주세요.'); return; }
+  if (!v.canConsent) { fail('아직 안내 기간 전이에요', ymd(v.nextBillingDate) + ' 결제일 2주 전부터 동의하실 수 있어요.'); return; }
+  $('who').textContent = v.name || '회원';
+  $('now-line').textContent = '첫 달 ' + won(v.firstAmount) + '원';
+  ['price', 'price2', 'price3'].forEach(function (k) { $(k).textContent = won(v.price); });
+  ['due', 'due2', 'due3', 'due4'].forEach(function (k) { $(k).textContent = ymd(v.nextBillingDate); });
+  show('form');
+}
+
+function load() {
+  if (!/^[0-9a-f-]{36}$/i.test(token)) { fail('링크를 확인할 수 없어요'); return; }
+  fetch(API + '?t=' + encodeURIComponent(token))
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (x) { if (!x.ok) fail('링크를 확인할 수 없어요', x.d.error); else render(x.d); })
+    .catch(function () { fail('잠시 후 다시 시도해 주세요', '인터넷 연결을 확인해 주세요.'); });
+}
+
+function consent() {
+  if (!$('agree').checked) { alert('내용을 확인하고 동의 칸에 체크해 주세요.'); return; }
+  var btn = $('go');
+  btn.disabled = true; btn.textContent = '처리 중…';
+  fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token }) })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (x) {
+      if (x.ok && x.d.success) { render(x.d); return; }
+      alert(x.d.error || '처리하지 못했어요. 다시 시도해 주세요.');
+      btn.disabled = false; btn.textContent = '동의하고 계속하기';
+    })
+    .catch(function () {
+      alert('처리하지 못했어요. 다시 시도해 주세요.');
+      btn.disabled = false; btn.textContent = '동의하고 계속하기';
+    });
+}
+
+load();
+</script>
+</body>
+</html>

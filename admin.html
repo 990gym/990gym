@@ -78,6 +78,10 @@
   .btn-plan { background: #fef3c7; color: #d97706; }
   .btn-billing { background: #dbeafe; color: #2563eb; }
   .btn-addon { background: #ede9fe; color: #7c3aed; }
+  .btn-consent { background: #fce7f3; color: #db2777; }
+  .promo-tag { display: inline-block; margin: 2px 0 0 4px; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .promo-wait { background: #fce7f3; color: #db2777; }
+  .promo-ok { background: #dcfce7; color: #16a34a; }
   .addon-tag { display: inline-block; margin: 2px 0 0 4px; padding: 1px 7px; border-radius: 10px; background: #ede9fe; color: #7c3aed; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .addon-opt { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; }
   .addon-opt input { width: 18px; height: 18px; margin: 0; }
@@ -329,6 +333,9 @@ const ADDONS = { locker: { name: '개인락커', short: '락커', price: 10000 }
 const PLAN_ADDONS = { '베이직': ['locker', 'wear'], '스탠다드': ['locker'], '프리미엄': ['locker'] };
 const validAddons = (s) => (Array.isArray(s.addons) ? s.addons : []).filter(a => (PLAN_ADDONS[s.plan] || []).includes(a));
 const monthlyAmount = (s) => (PLAN_PRICES[s.plan] || 0) + validAddons(s).reduce((sum, a) => sum + ADDONS[a].price, 0);
+// 스피닝 첫 달 50%: 손님이 정가 전환에 동의해야 다음 달 결제됨 (동의 없으면 결제일에 자동 종료)
+const isPromoWaiting = (s) => !!s.promo && !s.price_consent_at;
+const expectedAmount = (s) => (isPromoWaiting(s) ? 0 : monthlyAmount(s));
 const CHURN_REASONS = ['기간권 전환', '이사', '개인사정', '운동중단', '부상', '가격 부담', '타 시설 이동', '기타'];
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
@@ -429,7 +436,7 @@ function renderStats() {
   const total = subscribers.length;
   const active = subscribers.filter(s => s.status === 'active').length;
   const cancelled = subscribers.filter(s => s.status === 'cancelled').length;
-  const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + monthlyAmount(s), 0);
+  const revenue = subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + expectedAmount(s), 0);
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-cancelled').textContent = cancelled;
@@ -454,7 +461,9 @@ function renderTable() {
         : '<span class="badge badge-cancelled">해지</span>';
     const actionBtns = s.status === 'active'
       ? `<button class="action-btn btn-plan" onclick="openPlanModal('${s.id}', '${s.name}', '${s.plan}')">플랜변경</button>
-         <button class="action-btn btn-addon" onclick="openAddonModal('${s.id}')">옵션</button>
+         ${isPromoWaiting(s)
+           ? `<button class="action-btn btn-consent" onclick="copyConsentMessage('${s.id}')">계속하기 문자</button>`
+           : `<button class="action-btn btn-addon" onclick="openAddonModal('${s.id}')">옵션</button>`}
          <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
          <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', '${s.name}')">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', '${s.name}')">복구</button>`;
@@ -474,7 +483,7 @@ function renderTable() {
       <td class="col-name" data-label="이름"><button class="name-link" onclick="openHistory('${s.id}')" title="구독 이력 보기">${escHtml(s.name||'-')}</button></td>
       <td class="col-phone" data-label="연락처">${s.phone||'-'}</td>
       <td class="col-email" data-label="이메일">${s.email||'-'}</td>
-      <td data-label="플랜">${s.plan||'-'}${validAddons(s).map(a => `<span class="addon-tag">+${ADDONS[a].short}</span>`).join('')}</td>
+      <td data-label="플랜">${s.plan||'-'}${validAddons(s).map(a => `<span class="addon-tag">+${ADDONS[a].short}</span>`).join('')}${s.promo ? (s.price_consent_at ? '<span class="promo-tag promo-ok">첫달50% · 정가동의</span>' : '<span class="promo-tag promo-wait">첫달50% · 동의대기</span>') : ''}</td>
       <td data-label="상태">${statusBadge}</td>
       <td class="col-churn" data-label="이탈사유">${churnCell}</td>
       <td class="col-join" data-label="가입일">${date}</td>
@@ -671,6 +680,28 @@ async function confirmPlanChange() {
   } catch(e) {
     alert('오류: ' + e.message);
     closePlanModal();
+  }
+}
+
+// ===== 스피닝 첫 달 50% → '계속하기' 동의 문자 =====
+// 결제일 2주 전부터 동의 가능. 동의 안 하면 결제일에 결제 없이 자동 종료(서버).
+async function copyConsentMessage(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) return;
+  if (!s.consent_token) { alert('동의 링크가 없습니다. (Supabase에 consent_token 칸이 추가됐는지 확인해주세요)'); return; }
+  const due = s.next_billing_date ? new Date(`${String(s.next_billing_date).slice(0,10)}T00:00:00+09:00`) : null;
+  const opens = due ? new Date(due.getTime() - 14 * 86400000) : null;
+  const fmt = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  if (opens && new Date() < opens) {
+    if (!confirm(`아직 안내 기간 전입니다. ${fmt(opens)}부터 손님이 동의할 수 있어요.\n그래도 문자를 복사할까요?`)) return;
+  }
+  const url = `https://the990.co.kr/continue.html?t=${s.consent_token}`;
+  const msg = `[990짐] ${s.name}님, 스피닝 첫 달 어떠셨어요?\n${due ? fmt(due) : '다음 결제일'}부터 월 ${monthlyAmount(s).toLocaleString()}원으로 계속 이용하시려면 아래 링크에서 확인 후 동의해 주세요.\n동의하지 않으시면 추가 결제 없이 첫 달로 종료돼요.\n${url}`;
+  try {
+    await navigator.clipboard.writeText(msg);
+    alert('문자 내용이 복사됐어요. 카톡이나 문자에 붙여넣어 보내주세요.\n\n' + msg);
+  } catch (e) {
+    prompt('아래 내용을 복사해서 보내주세요.', msg);
   }
 }
 
