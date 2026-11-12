@@ -26,6 +26,7 @@
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  html { overflow-x: clip; }
   body { overflow-x: hidden; background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; padding-bottom: 96px; }
   a { color: inherit; }
   .wrap { max-width: 520px; margin: 0 auto; padding: 0 20px; }
@@ -130,6 +131,12 @@
   .offer-price s { font-size: 0.5em; font-weight: 500; color: var(--muted); margin-right: 8px; }
   .offer-price .off { display: inline-block; vertical-align: middle; margin-left: 8px; font-size: 0.38em; font-weight: 900; color: #fff; background: var(--pink); padding: 3px 8px; border-radius: 999px; letter-spacing: 0; }
   .offer-after { margin-top: 2px; font-size: 0.82rem; color: var(--muted); }
+  /* 결제창 안심 문구 */
+  .assure { background: #fff0f7; border: 1.5px solid #ffc2e0; border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; }
+  .assure div { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; color: #222; line-height: 1.5; padding: 3px 0; }
+  .assure div::before { content: '✓'; color: var(--pink); font-weight: 900; flex: 0 0 auto; }
+  .assure b { color: #111; font-weight: 900; }
+  .secure { margin-top: 10px; text-align: center; font-size: 0.74rem; color: #888; }
   .sheet .cancel { display: block; width: 100%; margin-top: 8px; padding: 12px; background: none; border: none; font-family: inherit; font-size: 0.88rem; color: #888; cursor: pointer; }
 
   /* 완료 화면 */
@@ -336,6 +343,11 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
   <div class="sheet">
     <h3>990 스피닝 시작하기</h3>
     <p class="info"><b>프리미엄</b> · 첫 달 <b>49,500원</b> (스피닝·GX 무제한 + 헬스)</p>
+    <div class="assure">
+      <div><span>오늘은 <b>49,500원만</b> 결제돼요</span></div>
+      <div><span>다음 달은 <b>문자로 동의하셔야만</b> 결제돼요</span></div>
+      <div><span>동의 안 하시면 <b>자동으로 끝나요</b> · 추가 결제 없음</span></div>
+    </div>
     <div class="fg"><label for="pay-name">이름</label><input type="text" id="pay-name" placeholder="홍길동" autocomplete="name"></div>
     <div class="fg"><label for="pay-phone">연락처</label><input type="tel" id="pay-phone" placeholder="010-0000-0000" autocomplete="tel" inputmode="numeric"></div>
     <div class="fg"><label for="pay-email">이메일</label><input type="email" id="pay-email" placeholder="example@email.com" autocomplete="email"></div>
@@ -347,7 +359,8 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
       · 결제 후 7일 이내 미이용 시 전액 환불돼요.
     </div>
     <label class="agree"><input type="checkbox" id="pay-agree"><span>첫 달 결제 내용과 <a href="https://the990.co.kr" target="_blank">이용약관·개인정보처리방침</a>에 동의해요.</span></label>
-    <button class="cta" id="pay-submit-btn" onclick="requestBilling()">카드 등록하고 시작하기 →</button>
+    <button class="cta" id="pay-submit-btn" onclick="requestBilling()">49,500원 결제하고 시작하기 →</button>
+    <p class="secure">🔒 카드 정보는 토스페이먼츠가 보관해요. 990짐은 카드번호를 저장하지 않아요.</p>
     <button class="cancel" onclick="closeSheet()">닫기</button>
   </div>
 </div>
@@ -504,7 +517,7 @@ function requestBilling() {
     console.error(e);
     if (e.code !== 'USER_CANCEL') alert('결제 요청 중 오류가 발생했습니다: ' + e.message);
     btn.disabled = false;
-    btn.textContent = '카드 등록하고 시작하기 →';
+    btn.textContent = '49,500원 결제하고 시작하기 →';
   });
 }
 
