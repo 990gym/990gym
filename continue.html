@@ -111,7 +111,7 @@ function render(v) {
     return;
   }
   if (v.status !== 'active') { fail('이미 종료된 구독이에요', '다시 시작하시려면 센터로 문의해 주세요.'); return; }
-  if (!v.canConsent) { fail('아직 안내 기간 전이에요', ymd(v.nextBillingDate) + ' 결제일 2주 전부터 동의하실 수 있어요.'); return; }
+  if (!v.canConsent) { fail('아직 안내 기간 전이에요', ymd(v.nextBillingDate) + ' 결제일 10일 전부터 동의하실 수 있어요.'); return; }
   $('who').textContent = v.name || '회원';
   $('now-line').textContent = '첫 달 ' + won(v.firstAmount) + '원';
   ['price', 'price2', 'price3'].forEach(function (k) { $(k).textContent = won(v.price); });
