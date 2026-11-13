@@ -69,9 +69,9 @@
   .hero-facts { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 0.4rem 2.6rem; }
   .hours { min-width: 15rem; }
   .hours h2 { font-size: 0.78rem; font-weight: 500; color: #8a8c90; }
-  .hours table { margin-top: 0.2rem; border-collapse: collapse; width: 100%; }
-  .hours th { text-align: left; font-weight: 500; color: #55585f; font-size: 0.95rem; padding: 0.3rem 1.5rem 0.3rem 0; white-space: nowrap; width: 1%; }
-  .hours td { font-weight: 700; color: var(--ink); font-size: 1rem; padding: 0.3rem 0; font-variant-numeric: tabular-nums; }
+  .hours ul { list-style: none; margin-top: 0.15rem; }
+  .hours li { font-weight: 700; color: var(--ink); font-size: 1.05rem; padding: 0.2rem 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hours small { font-size: 0.8rem; font-weight: 500; color: #8a8c90; margin-left: 0.2rem; }
   .hero-facts dt { font-size: 0.78rem; color: #8a8c90; }
   .hero-facts dd { white-space: nowrap; }
   .hero-facts dd { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-top: 0.15rem; }
@@ -280,11 +280,11 @@
     </dl>
     <div class="hours">
       <h2>운영시간</h2>
-      <table>
-        <tr><th>평일</th><td>06:00 – 23:30</td></tr>
-        <tr><th>주말 · 공휴일</th><td>09:00 – 20:00</td></tr>
-        <tr><th>휴관</th><td>매월 2·4째 주 일요일</td></tr>
-      </table>
+      <ul>
+        <li>06:00 – 23:30 <small>(평일)</small></li>
+        <li>09:00 – 20:00 <small>(주말·공휴일)</small></li>
+        <li>매월 2·4째 주 일요일 <small>(휴관)</small></li>
+      </ul>
     </div>
     </div>
   </div>
