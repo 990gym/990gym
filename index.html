@@ -107,6 +107,18 @@
     .zone-photo img { aspect-ratio: 4 / 4.6; }
   }
 
+  /* 런990크루 — 센터 밖 활동. 영상이 주인공 */
+  .crew { max-width: 1240px; margin: 0 auto 4.5rem; display: grid; gap: 1.6rem; }
+  .crew-video { border-radius: 28px; overflow: hidden; background: var(--wall); order: -1; }
+  .crew-video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+  .crew-facts { margin-top: 1.3rem; display: grid; grid-template-columns: auto 1fr; gap: 0.55rem 1.2rem; max-width: 28em; }
+  .crew-facts dt { color: #8a8d93; font-size: 0.9rem; }
+  .crew-facts dd { margin: 0; color: var(--ink); font-weight: 600; font-size: 0.95rem; word-break: keep-all; }
+  @media (min-width: 900px) {
+    .crew { grid-template-columns: 0.8fr 1.2fr; gap: 4rem; align-items: center; margin-bottom: 6rem; }
+    .crew-video { order: 2; }
+  }
+
   /* 디테일 띠 */
   .details { background: var(--wall); padding: 4.5rem 1.5rem; }
   .details-inner { max-width: 1240px; margin: 0 auto; }
@@ -416,6 +428,23 @@
       <h3>불 끄고, 음악 켜고,<br>페달.</h3>
       <p>삼송·신원동에 하나뿐인 스피닝룸이에요. 프리미엄 구독이면 스피닝과 요가·필라테스·줌바 수업을 무제한으로 들을 수 있어요.</p>
       <a href="spinning.html">스피닝 시간표 보기</a>
+    </div>
+  </div>
+  <div class="crew" id="crew">
+    <div class="zone-text">
+      <div class="wayfind"><b>런990크루</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 6 L7 6" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 1 L7 6 L13 11" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,21 36,13 6,25 36,37 36,29 166,29" fill="#2B5FC7"/></svg></div>
+      <h3>센터 밖에서도<br>같이 달려요</h3>
+      <p>2025년 10월에 시작한 990짐 러닝크루예요. 비 오는 날도, 눈 오는 날도 같이 달리다 보니 1년이 됐어요.</p>
+      <dl class="crew-facts">
+        <dt>모이는 곳</dt><dd>오전 9시, 990짐 센터</dd>
+        <dt>거리</dt><dd>3–7km</dd>
+        <dt>끝나고</dt><dd>리커버리 스트레칭, 그리고 커피</dd>
+        <dt>참가비</dt><dd>월 3만 원</dd>
+      </dl>
+      <a href="http://pf.kakao.com/_SxakPn" target="_blank" rel="noopener">카카오톡으로 참여 문의하기</a>
+    </div>
+    <div class="crew-video">
+      <video src="img/run990.mp4" poster="img/run990-poster.jpg" muted loop playsinline preload="none" width="960" height="540" aria-label="런990크루 1주년 영상: 계절마다 함께 달린 모습"></video>
     </div>
   </div>
 </section>
@@ -890,6 +919,14 @@ document.querySelectorAll('.fade-in').forEach(function(el) {
     el.textContent = e;
     if (el.parentElement.tagName === 'A') el.parentElement.href = 'mailto:' + e;
   });
+})();
+</script>
+<script>
+// 런990크루 영상: 화면에 보일 때만 재생 (움직임 줄이기 설정이면 멈춘 채 재생 버튼만)
+(function(){
+  var v=document.querySelector('.crew-video video'); if(!v) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) { v.controls=true; return; }
+  new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ v.play().catch(function(){ v.controls=true; }); } else { v.pause(); } }); }, {threshold:0.35}).observe(v);
 })();
 </script>
 </html>
