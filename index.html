@@ -83,10 +83,14 @@
     .hero-photo img { position: absolute; inset: 0; }
   }
 
-  /* 요금제 위 큰 띠 사진 */
-  .band { margin-top: 1rem; }
-  .band img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 55%; }
-  @media (min-width: 900px) { .band { margin-top: 5rem; } .band img { aspect-ratio: 21 / 8; } }
+  /* 무브먼트 존 — 가로로 꽉 찬 큰 사진 */
+  .zone-wide { max-width: 1240px; margin: 0 auto 4.5rem; }
+  .zone-wide .zone-text h3 { margin-top: 1.4rem; }
+  .zone-wide img { display: block; width: 100vw; max-width: none; margin: 1.8rem 0 0 calc(50% - 50vw); height: auto; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 55%; }
+  @media (min-width: 900px) {
+    .zone-wide { margin-bottom: 6rem; }
+    .zone-wide img { aspect-ratio: 21 / 8; margin-top: 2.6rem; }
+  }
 
   /* 길 안내 표지 — 990짐 벽면 사인을 그대로 옮긴 장치. 공간 투어의 각 구역 이름에만 쓴다 */
   .wayfind { display: inline-grid; grid-template-columns: auto; justify-items: end; gap: 0.35rem; }
@@ -295,10 +299,6 @@
   </div>
 </section>
 
-<div class="band" role="img" aria-label="통창으로 햇빛이 드는 990짐 웨이트 존 전경">
-  <img src="img/main-floor-wide.jpg" alt="" loading="lazy" width="2000" height="1333">
-</div>
-
 <section class="section-alt" id="plans">
   <div class="section-label">구독 요금제</div>
   <h2 class="section-title">나에게 맞는 방식으로 시작하세요</h2>
@@ -356,43 +356,43 @@
     <p>990짐은 한 층 전체를 씁니다. 운동하는 자리와 쉬는 자리를 나눠 두었어요.</p>
   </div>
 
-  <div class="zone">
-    <div class="zone-photo"><img src="img/zone-machines-night.jpg" alt="저녁에 불이 켜진 머신 존" loading="lazy" width="1080" height="1440"></div>
+  <div class="zone-wide">
     <div class="zone-text">
-      <div class="wayfind"><b>Movement zone</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <div class="wayfind"><b>무브먼트 존</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
       <h3>당신의 움직임이<br>더 편안해지도록</h3>
-      <p>머신 사이를 넉넉하게 띄워 두어 기다리거나 부딪힐 일이 적어요. 퇴근 후 늦은 시간에도 밝은 조명 아래에서 운동할 수 있어요.</p>
+      <p>통창을 따라 덤벨과 머신을 넉넉한 간격으로 두었어요. 기다리거나 부딪힐 일 없이 운동에만 집중할 수 있어요.</p>
     </div>
+    <img src="img/main-floor-wide.jpg" alt="통창으로 햇빛이 드는 990짐 웨이트 존 전경" loading="lazy" width="2000" height="1333">
   </div>
 
-  <div class="zone flip">
+  <div class="zone">
     <div class="zone-photo"><img src="img/zone-recovery.jpg" alt="햇빛과 화분 그림자가 드리운 창가 계단" loading="lazy" width="1100" height="1467"></div>
     <div class="zone-text">
-      <div class="wayfind"><b>Recovery step</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <div class="wayfind"><b>리커버리 스텝</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
       <h3>잠시 앉아<br>호흡을 가다듬는 공간</h3>
       <p>세트 사이, 운동이 끝난 뒤. 창가 계단에 앉아 쉬어 가세요. 운동과 휴식이 자연스럽게 이어지도록 만든 자리예요.</p>
     </div>
   </div>
 
-  <div class="zone">
+  <div class="zone flip">
     <div class="zone-photo"><img src="img/main-stretch.jpg" alt="은은한 조명이 깔린 스트레칭 존 매트" loading="lazy" width="1100" height="1650"></div>
     <div class="zone-text">
-      <div class="wayfind"><b>Stretching zone</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <div class="wayfind"><b>스트레칭 존</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
       <h3>당신의 하루에도<br>이완이 필요하니까</h3>
       <p>매트가 깔린 스트레칭 존에서 몸을 풀고 마무리하세요. 몸과 마음의 균형을 찾는 시간이에요.</p>
     </div>
   </div>
 
-  <div class="zone flip">
+  <div class="zone">
     <div class="zone-photo"><img src="img/zone-cardio.jpg" alt="창가를 따라 놓인 트레드밀" loading="lazy" width="1080" height="1440"></div>
     <div class="zone-text">
-      <div class="wayfind"><b>Cardio zone</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <div class="wayfind"><b>유산소 존</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
       <h3>창밖을 보며<br>달리는 시간</h3>
       <p>트레드밀을 통창 앞에 나란히 두었어요. 화면 대신 바깥 풍경을 보며 걷고 달릴 수 있어요.</p>
     </div>
   </div>
 
-  <div class="zone">
+  <div class="zone flip">
     <div class="zone-photo"><img src="img/main-gx-yoga.jpg" alt="GX룸 요가 수업" loading="lazy" width="1400" height="1050" style="object-position: 58% 50%"></div>
     <div class="zone-text">
       <div class="wayfind"><b>GX룸</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
@@ -401,7 +401,7 @@
     </div>
   </div>
 
-  <div class="zone flip">
+  <div class="zone">
     <div class="zone-photo"><img src="img/spin-room-1.jpg" alt="조명과 사운드를 갖춘 스피닝룸" loading="lazy" width="1400" height="788"></div>
     <div class="zone-text">
       <div class="wayfind"><b>스피닝룸</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
