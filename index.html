@@ -83,15 +83,6 @@
     .hero-photo img { position: absolute; inset: 0; }
   }
 
-  /* 무브먼트 존 — 가로로 꽉 찬 큰 사진 */
-  .zone-wide { max-width: 1240px; margin: 0 auto 4.5rem; }
-  .zone-wide .zone-text h3 { margin-top: 1.4rem; }
-  .zone-wide img { display: block; width: 100vw; max-width: none; margin: 1.8rem 0 0 calc(50% - 50vw); height: auto; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 55%; }
-  @media (min-width: 900px) {
-    .zone-wide { margin-bottom: 6rem; }
-    .zone-wide img { aspect-ratio: 21 / 8; margin-top: 2.6rem; }
-  }
-
   /* 길 안내 표지 — 990짐 벽면 사인을 그대로 옮긴 장치. 공간 투어의 각 구역 이름에만 쓴다 */
   .wayfind { display: inline-grid; grid-template-columns: auto; justify-items: end; gap: 0.35rem; }
   .wayfind b { font-size: 1.05rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
@@ -357,13 +348,22 @@
     <p>990짐은 한 층 전체를 씁니다. 운동하는 자리와 쉬는 자리를 나눠 두었어요.</p>
   </div>
 
-  <div class="zone-wide">
+  <div class="zone">
+    <div class="zone-photo"><img src="img/main-floor-wide.jpg" alt="통창으로 햇빛이 드는 990짐 웨이트 존" loading="lazy" width="2000" height="1333" style="object-position: 62% 50%"></div>
     <div class="zone-text">
       <div class="wayfind"><b>무브먼트 존</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
       <h3>당신의 움직임이<br>더 편안해지도록</h3>
       <p>통창을 따라 덤벨과 머신을 넉넉한 간격으로 두었어요. 기다리거나 부딪힐 일 없이 운동에만 집중할 수 있어요.</p>
     </div>
-    <img src="img/main-floor-wide.jpg" alt="통창으로 햇빛이 드는 990짐 웨이트 존 전경" loading="lazy" width="2000" height="1333">
+  </div>
+
+  <div class="zone flip">
+    <div class="zone-photo"><img src="img/zone-rack.jpg" alt="파워랙과 플레이트로드 머신이 늘어선 랙 존" loading="lazy" width="1400" height="1050" style="object-position: 55% 50%"></div>
+    <div class="zone-text">
+      <div class="wayfind"><b>랙 존</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <h3>제대로 들고 싶은 날엔<br>랙 존으로</h3>
+      <p>파워랙과 플레이트로드 머신을 한곳에 모았어요. 하체와 힙 운동 기구도 넉넉해서 원하는 루틴을 그대로 할 수 있어요.</p>
+    </div>
   </div>
 
   <div class="zone">
