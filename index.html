@@ -83,6 +83,11 @@
     .hero-photo img { position: absolute; inset: 0; }
   }
 
+  /* 요금제 위 큰 띠 사진 */
+  .band { margin-top: 1rem; }
+  .band img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 55%; }
+  @media (min-width: 900px) { .band { margin-top: 5rem; } .band img { aspect-ratio: 21 / 8; } }
+
   /* 길 안내 표지 — 990짐 벽면 사인을 그대로 옮긴 장치. 공간 투어의 각 구역 이름에만 쓴다 */
   .wayfind { display: inline-grid; grid-template-columns: auto; justify-items: end; gap: 0.35rem; }
   .wayfind b { font-size: 1.05rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
@@ -290,6 +295,10 @@
   </div>
 </section>
 
+<div class="band" role="img" aria-label="통창으로 햇빛이 드는 990짐 웨이트 존 전경">
+  <img src="img/main-floor-wide.jpg" alt="" loading="lazy" width="2000" height="1333">
+</div>
+
 <section class="section-alt" id="plans">
   <div class="section-label">구독 요금제</div>
   <h2 class="section-title">나에게 맞는 방식으로 시작하세요</h2>
@@ -392,7 +401,7 @@
     <div class="detail-row">
       <figure><img src="img/detail-lounge.jpg" alt="인포 데스크 앞 테이블과 의자" loading="lazy" width="900" height="1350"><figcaption>인포 앞에 앉을 자리가 넉넉해요. 운동 전후로 편하게 쉬어 가세요.</figcaption></figure>
       <figure><img src="img/detail-drinks.jpg" alt="카페인 음료와 단백질 음료가 든 음료 냉장고" loading="lazy" width="900" height="1350"><figcaption>카페인 음료부터 단백질 음료까지, 인포에서 바로 사 마실 수 있어요.</figcaption></figure>
-      <figure><img src="img/detail-water.jpg" alt="창가 테이블과 정수기가 있는 통로" loading="lazy" width="900" height="1350"><figcaption>인포 옆에 테이블과 정수기도 있어요. 물은 언제든 마시면 돼요.</figcaption></figure>
+      <figure><img src="img/detail-water.jpg" alt="창가 테이블과 정수기가 있는 통로" loading="lazy" width="900" height="1350"><figcaption>테이블과 정수기가 있어 물은 언제든 마실 수 있어요.</figcaption></figure>
       <figure><img src="img/detail-mirror.jpg" alt="스트레칭 존 벽에 눈높이로 길게 단 거울" loading="lazy" width="900" height="1200"><figcaption>스트레칭 존 거울은 좁고 길게, 눈높이에만 달았어요. 스트레칭하다 민망한 자세가 비치지 않도록요.</figcaption></figure>
       <figure><img src="img/main-sound.jpg" alt="벽에 매립된 스피커와 스트레칭 존 안내 표지" loading="lazy" width="900" height="1350"><figcaption>벽에 매립한 스피커로 음악이 흘러요.</figcaption></figure>
       <figure><img src="img/main-wayfind.jpg" alt="탈의실, 샤워실, 화장실, 스피닝룸 방향 안내 표지" loading="lazy" width="900" height="1350"><figcaption>탈의실·샤워실·스피닝룸까지 표지만 따라오세요.</figcaption></figure>
