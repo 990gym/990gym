@@ -137,7 +137,8 @@
   .room .room-sub { margin-top: 6px; color: var(--muted); font-size: 0.9rem; }
   .shots { display: flex; gap: 10px; margin: 16px -20px 0; padding: 0 20px 4px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .shots::-webkit-scrollbar { display: none; }
-  .shots figure { flex: 0 0 86%; scroll-snap-align: start; margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+  .shots figure { position: relative; flex: 0 0 86%; scroll-snap-align: start; margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+  .shots figcaption { position: absolute; left: 10px; bottom: 10px; font-size: 0.68rem; font-weight: 700; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 999px; }
   .shots img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
   .shots-hint { margin-top: 8px; font-size: 0.75rem; color: var(--muted); }
   @media (min-width: 900px) {
@@ -285,12 +286,15 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
   </section>
 
   <section class="room">
-    <h2>실제 스피닝룸이에요</h2>
+    <h2>불 끄면, 이런 분위기</h2>
     <p class="room-sub">990짐 7층 · 조명과 사운드를 갖춘 스피닝 전용룸</p>
     <div class="shots">
-      <figure><img src="img/spin-room-1.jpg" alt="990짐 스피닝룸 전경" loading="lazy" width="1400" height="788"></figure>
-      <figure><img src="img/spin-room-2.jpg" alt="990짐 스피닝룸 바이크와 거울" loading="lazy" width="1400" height="788"></figure>
-      <figure><img src="img/spin-room-3.jpg" alt="990짐 스피닝룸 창가 쪽" loading="lazy" width="1400" height="788"></figure>
+      <figure><img src="img/spin-class-ai-1.jpg" alt="스피닝 수업 분위기 연출 이미지" loading="lazy" width="1400" height="788"><figcaption>AI 연출 이미지</figcaption></figure>
+      <figure><img src="img/spin-class-ai-2.jpg" alt="스피닝 수업 분위기 연출 이미지" loading="lazy" width="1400" height="788"><figcaption>AI 연출 이미지</figcaption></figure>
+      <figure><img src="img/spin-class-ai-3.jpg" alt="스피닝 수업 분위기 연출 이미지" loading="lazy" width="1400" height="788"><figcaption>AI 연출 이미지</figcaption></figure>
+      <figure><img src="img/spin-room-1.jpg" alt="990짐 스피닝룸 전경" loading="lazy" width="1400" height="788"><figcaption>실제 스피닝룸</figcaption></figure>
+      <figure><img src="img/spin-room-2.jpg" alt="990짐 스피닝룸 바이크와 거울" loading="lazy" width="1400" height="788"><figcaption>실제 스피닝룸</figcaption></figure>
+      <figure><img src="img/spin-room-3.jpg" alt="990짐 스피닝룸 창가 쪽" loading="lazy" width="1400" height="788"><figcaption>실제 스피닝룸</figcaption></figure>
     </div>
     <p class="shots-hint">← 옆으로 넘겨 보세요</p>
   </section>
