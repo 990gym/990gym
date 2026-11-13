@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://the990.co.kr/og-image.jpg">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://js.tosspayments.com/v1/payment"></script>
 <style>
   :root {
@@ -24,12 +24,14 @@
     --white: #ffffff;
     --black: #111111;
     --gray: #666;
-    --light-gray: #f5f7ff;
-    --border: #dde4f5;
+    --light-gray: #f2f2ef;   /* 노출 콘크리트 천장 톤 */
+    --border: #e2e2dc;
+    --wall: #e9e7e1;         /* 인포 데스크 벽 톤 */
+    --ink: #1b1d22;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { background: var(--white); color: var(--black); font-family: 'Noto Sans KR', sans-serif; overflow-x: hidden; }
+  body { background: var(--white); color: var(--black); font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; overflow-x: hidden; }
 
   /* NAV */
   nav {
@@ -43,63 +45,87 @@
   .nav-links { display: flex; gap: 1.5rem; list-style: none; }
   .nav-links a { color: var(--gray); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.2s; }
   .nav-links a:hover { color: var(--blue); }
-  .nav-cta { background: var(--blue); color: var(--white); border: none; padding: 0.55rem 1.2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; white-space: nowrap; }
+  .nav-cta { background: var(--blue); color: var(--white); border: none; padding: 0.55rem 1.2rem; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; white-space: nowrap; }
   .nav-cta:hover { background: var(--blue-dark); }
   @media (max-width: 600px) {
     .nav-links { display: none; }
     nav { padding: 0.9rem 1.2rem; }
   }
 
-  /* HERO */
-  .hero {
-    min-height: 100vh;
-    display: flex; flex-direction: row;
-    justify-content: space-between; align-items: center;
-    gap: 2.5rem;
-    padding: 7rem 1.5rem 3rem;
-    background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 60%);
-    position: relative; overflow: hidden;
-  }
-  .hero-bg-circle { position: absolute; right: -15%; top: 50%; transform: translateY(-50%); width: min(500px,70vw); height: min(500px,70vw); border-radius: 50%; background: radial-gradient(circle, rgba(43,95,199,0.1) 0%, transparent 70%); z-index: 0; }
-  .hero-content { position: relative; z-index: 1; flex: 1 1 480px; }
-  .hero-image { position: relative; z-index: 1; flex: 1 1 420px; max-width: 520px; }
-  .hero-image img { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: 0 20px 60px rgba(43,95,199,0.15); }
-  @media (max-width: 768px) {
-    .hero { flex-direction: column; align-items: flex-start; }
-    .hero-image { max-width: 100%; }
-  }
-  @media (min-width: 769px) {
-    .hero { gap: 1.25rem; align-items: center; padding-right: 0; }
-    .hero-content { flex: 1 1 40%; min-width: 540px; }
-    .hero-image { flex: 1 1 60%; max-width: none; min-width: 0; }
-  }
-  .hero-badge { display: inline-block; background: var(--blue-light); color: var(--blue); font-size: 0.78rem; font-weight: 700; padding: 0.3rem 0.9rem; border-radius: 20px; margin-bottom: 1.2rem; position: relative; z-index: 1; border: 1px solid rgba(43,95,199,0.2); }
-  .hero h1 { font-size: clamp(2rem, 7vw, 5rem); font-weight: 900; line-height: 1.2; letter-spacing: -1px; color: var(--black); position: relative; z-index: 1; word-break: keep-all; }
-  .hero h1 .accent { color: var(--blue); }
-  .hero-sub { margin-top: 1.2rem; font-size: clamp(0.9rem, 2vw, 1.05rem); color: var(--gray); line-height: 1.8; max-width: 480px; position: relative; z-index: 1; word-break: keep-all; }
-  .hero-actions { margin-top: 2rem; display: flex; gap: 0.8rem; flex-wrap: wrap; position: relative; z-index: 1; }
-  .btn-primary { background: var(--blue); color: var(--white); border: none; padding: 0.9rem 2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+  /* HERO — 실제 공간 사진이 주인공 */
+  .hero { display: grid; grid-template-columns: 1fr; padding-top: 4.2rem; background: var(--white); }
+  .hero-photo { position: relative; height: 62vh; min-height: 380px; overflow: hidden; }
+  .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; display: block; }
+  .hero-content { padding: 2.2rem 1.5rem 3rem; }
+  .hero h1 { font-size: clamp(2.3rem, 8.5vw, 5.6rem); font-weight: 800; line-height: 1.12; letter-spacing: -0.045em; color: var(--ink); word-break: keep-all; }
+  .hero-sub { margin-top: 1.2rem; font-size: clamp(0.98rem, 2vw, 1.12rem); color: #55585f; line-height: 1.75; max-width: 30em; word-break: keep-all; }
+  .hero-actions { margin-top: 2rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .btn-primary { background: var(--blue); color: var(--white); border: none; padding: 1rem 1.7rem; font-family: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; border-radius: 999px; transition: background 0.15s; }
   .btn-primary:hover { background: var(--blue-dark); }
-  .btn-outline { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); padding: 0.9rem 2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: 600; font-size: 0.95rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
-  .btn-outline:hover { background: var(--blue-light); }
-  .hero-stat-row { margin-top: 3rem; display: flex; gap: 2rem; flex-wrap: wrap; position: relative; z-index: 1; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-  .hero-stat .num { font-size: 1.6rem; font-weight: 900; color: var(--blue); }
-  .hero-stat .label { font-size: 0.75rem; color: var(--gray); margin-top: 0.15rem; }
+  .btn-outline { background: transparent; color: var(--ink); border: 1.5px solid #c9c9c2; padding: 1rem 1.7rem; font-family: inherit; font-weight: 600; font-size: 1rem; cursor: pointer; border-radius: 999px; transition: border-color 0.15s; }
+  .btn-outline:hover { border-color: var(--ink); }
+  .hero-facts { margin-top: 2.6rem; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0.4rem 2.2rem; }
+  .hero-facts dt { font-size: 0.78rem; color: #8a8c90; }
+  .hero-facts dd { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-top: 0.15rem; }
+  @media (min-width: 900px) {
+    .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); min-height: 100vh; align-items: stretch; }
+    .hero-content { order: 1; display: flex; flex-direction: column; justify-content: center; padding: 4rem 3.5rem 4rem max(3rem, calc((100vw - 1240px) / 2)); }
+    .hero-photo { order: 2; height: auto; min-height: 0; border-bottom-left-radius: 56px; }
+  }
+  @media (max-width: 420px) { .hero-facts { grid-template-columns: repeat(2, auto); } }
+
+  /* 길 안내 표지 — 990짐 벽면 사인을 그대로 옮긴 장치. 공간 투어의 각 구역 이름에만 쓴다 */
+  .wayfind { display: inline-grid; grid-template-columns: auto; justify-items: end; gap: 0.35rem; }
+  .wayfind b { font-size: 1.05rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .wayfind svg { display: block; width: 168px; height: 38px; }
+
+  /* 공간 투어 */
+  .tour { padding: 5rem 1.5rem 2rem; background: var(--white); }
+  .tour-head { max-width: 1240px; margin: 0 auto 3rem; }
+  .tour-head h2 { font-size: clamp(1.8rem, 4.5vw, 3.2rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.2; color: var(--ink); word-break: keep-all; }
+  .tour-head p { margin-top: 0.9rem; color: #55585f; line-height: 1.75; max-width: 32em; word-break: keep-all; }
+  .zone { max-width: 1240px; margin: 0 auto 4.5rem; display: grid; grid-template-columns: 1fr; gap: 1.6rem; }
+  .zone-photo { border-radius: 28px; overflow: hidden; background: var(--wall); }
+  .zone-photo img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+  .zone-text h3 { margin-top: 1.4rem; font-size: clamp(1.5rem, 3.4vw, 2.4rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.25; color: var(--ink); word-break: keep-all; }
+  .zone-text p { margin-top: 0.8rem; color: #55585f; line-height: 1.8; max-width: 28em; word-break: keep-all; }
+  .zone-text a { display: inline-block; margin-top: 1.2rem; color: var(--blue); font-weight: 700; text-decoration: none; border-bottom: 2px solid currentColor; padding-bottom: 2px; }
+  @media (min-width: 900px) {
+    .zone { grid-template-columns: 1.1fr 0.9fr; gap: 4rem; align-items: center; margin-bottom: 6rem; }
+    .zone.flip .zone-photo { order: 2; }
+    .zone.flip .zone-text { order: 1; }
+    .zone-photo img { aspect-ratio: 4 / 4.6; }
+  }
+
+  /* 디테일 띠 */
+  .details { background: var(--wall); padding: 4.5rem 1.5rem; }
+  .details-inner { max-width: 1240px; margin: 0 auto; }
+  .details h2 { font-size: clamp(1.5rem, 3.6vw, 2.4rem); font-weight: 800; letter-spacing: -0.035em; color: var(--ink); word-break: keep-all; }
+  .details p.lead { margin-top: 0.7rem; color: #55585f; line-height: 1.75; max-width: 34em; word-break: keep-all; }
+  .detail-row { margin-top: 2rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+  .detail-row figure { margin: 0; }
+  .detail-row img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 18px; }
+  .detail-row figcaption { margin-top: 0.6rem; font-size: 0.85rem; color: #55585f; line-height: 1.5; word-break: keep-all; }
+  @media (max-width: 600px) {
+    .detail-row { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 72%; overflow-x: auto; scroll-snap-type: x mandatory; margin-right: -1.5rem; padding-right: 1.5rem; scrollbar-width: none; }
+    .detail-row::-webkit-scrollbar { display: none; }
+    .detail-row figure { scroll-snap-align: start; }
+  }
 
   /* SECTIONS */
-  .section { padding: 4rem 1.5rem; background: var(--white); }
-  .section-alt { padding: 4rem 1.5rem; background: var(--light-gray); }
-  .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--blue); margin-bottom: 0.6rem; }
-  .section-title { font-size: clamp(1.5rem, 3.5vw, 2.4rem); font-weight: 900; line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 0.8rem; color: var(--black); word-break: keep-all; }
+  .section { padding: 5rem 1.5rem; background: var(--white); }
+  .section-alt { padding: 5rem 1.5rem; background: var(--light-gray); }
+  .section, .section-alt, .signup-section { padding-left: max(1.5rem, calc((100% - 1240px) / 2)); padding-right: max(1.5rem, calc((100% - 1240px) / 2)); }
+  .section-label { display: none; }
+  .section-title { font-size: clamp(1.7rem, 4vw, 2.8rem); font-weight: 800; line-height: 1.2; letter-spacing: -0.04em; margin-bottom: 0.8rem; color: var(--black); word-break: keep-all; }
   .section-desc { color: var(--gray); font-size: 0.9rem; line-height: 1.8; max-width: 500px; word-break: keep-all; }
 
   /* PLANS */
   .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
-  .plan-card { border: 1.5px solid var(--border); padding: 2rem 1.5rem; position: relative; background: var(--white); border-radius: 8px; transition: box-shadow 0.2s, transform 0.2s; }
-  .plan-card:hover { box-shadow: 0 8px 32px rgba(43,95,199,0.1); transform: translateY(-3px); }
-  .plan-card.featured { border-color: var(--blue); box-shadow: 0 4px 24px rgba(43,95,199,0.12); }
-  .plan-badge { position: absolute; top: -1px; right: 1.2rem; background: var(--blue); color: var(--white); font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.7rem; border-radius: 0 0 6px 6px; }
-  .plan-name { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.8rem; }
+  .plan-card { border: 1.5px solid var(--border); padding: 2rem 1.6rem; position: relative; background: var(--white); border-radius: 22px; }
+  .plan-card.featured { border: 2px solid var(--blue); }
+  .plan-badge { position: absolute; top: 1.6rem; right: 1.4rem; background: var(--blue); color: var(--white); font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 999px; }
+  .plan-name { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-bottom: 0.6rem; }
   .plan-price { font-size: 2.4rem; font-weight: 900; color: var(--black); letter-spacing: -1px; }
   .plan-price .won { font-size: 1.2rem; }
   .plan-unit { font-size: 0.75rem; color: #aaa; margin-top: 0.2rem; }
@@ -107,11 +133,11 @@
   .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
   .plan-features li { font-size: 0.85rem; color: #444; display: flex; align-items: center; gap: 0.5rem; }
   .plan-features li::before { content: '✓'; color: var(--blue); font-weight: 700; flex-shrink: 0; }
-  .plan-btn { display: block; width: 100%; margin-top: 1.5rem; padding: 0.85rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; text-align: center; border-radius: 4px; transition: background 0.15s; border: none; }
+  .plan-btn { display: block; width: 100%; margin-top: 1.5rem; padding: 0.95rem; border-radius: 999px !important; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; text-align: center; border-radius: 4px; transition: background 0.15s; border: none; }
   .plan-btn.primary { background: var(--blue); color: var(--white); }
   .plan-btn.primary:hover { background: var(--blue-dark); }
-  .plan-btn.secondary { background: var(--blue-light); color: var(--blue); border: 1.5px solid var(--border); }
-  .plan-btn.secondary:hover { border-color: var(--blue); }
+  .plan-btn.secondary { background: var(--white); color: var(--ink); border: 1.5px solid #c9c9c2; }
+  .plan-btn.secondary:hover { border-color: var(--ink); }
 
   /* FEATURES */
   .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
@@ -125,18 +151,17 @@
   .steps { display: flex; flex-direction: column; margin-top: 2.5rem; max-width: 680px; }
   .step { display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
   .step:last-child { border-bottom: none; }
-  .step-num { font-size: 2rem; font-weight: 900; color: var(--blue-light); line-height: 1; flex-shrink: 0; width: 50px; transition: color 0.2s; }
-  .step:hover .step-num { color: var(--blue); }
-  .step-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--black); }
-  .step-desc { font-size: 0.83rem; color: var(--gray); line-height: 1.7; word-break: keep-all; }
+  .step-num { font-size: 1.8rem; font-weight: 800; color: var(--blue); line-height: 1; flex-shrink: 0; width: 50px; }
+  .step-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--black); }
+  .step-desc { font-size: 0.92rem; color: var(--gray); line-height: 1.7; word-break: keep-all; }
 
   /* FAQ */
   .faq-list { margin-top: 2.5rem; max-width: 680px; }
   .faq-item { border-bottom: 1px solid var(--border); }
-  .faq-q { width: 100%; background: none; border: none; color: var(--black); text-align: left; padding: 1.2rem 0; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; word-break: keep-all; }
+  .faq-q { width: 100%; background: none; border: none; color: var(--black); text-align: left; padding: 1.3rem 0; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; word-break: keep-all; }
   .faq-q:hover { color: var(--blue); }
   .faq-icon { color: var(--blue); font-size: 1.2rem; transition: transform 0.2s; flex-shrink: 0; }
-  .faq-a { font-size: 0.84rem; color: var(--gray); line-height: 1.8; padding-bottom: 1.2rem; display: none; word-break: keep-all; }
+  .faq-a { font-size: 0.93rem; color: var(--gray); line-height: 1.8; padding-bottom: 1.2rem; display: none; word-break: keep-all; }
   .faq-item.open .faq-a { display: block; }
   .faq-item.open .faq-icon { transform: rotate(45deg); }
 
@@ -150,17 +175,17 @@
   @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
   .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
   .form-label { font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.8); }
-  .form-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; border-radius: 4px; }
+  .form-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; outline: none; border-radius: 4px; }
   .form-input::placeholder { color: rgba(255,255,255,0.4); }
   .form-input:focus { border-color: rgba(255,255,255,0.7); }
-  .form-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; cursor: pointer; border-radius: 4px; }
+  .form-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); padding: 0.75rem 0.9rem; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; outline: none; cursor: pointer; border-radius: 4px; }
   .form-select option { background: #1e4aaa; }
-  .form-submit { background: var(--white); color: var(--blue); border: none; padding: 1rem; font-family: 'Noto Sans KR', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; border-radius: 4px; margin-top: 0.3rem; transition: background 0.15s; }
+  .form-submit { background: var(--white); color: var(--blue); border: none; padding: 1rem; border-radius: 999px !important; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; border-radius: 4px; margin-top: 0.3rem; transition: background 0.15s; }
   .form-submit:hover { background: #f0f4ff; }
   .form-note { font-size: 0.72rem; color: rgba(255,255,255,0.45); line-height: 1.6; word-break: keep-all; }
 
   /* FOOTER */
-  footer { background: #0d1a3a; padding: 3rem 1.5rem 2rem; }
+  footer { background: #16181d; padding: 3rem 1.5rem 2rem; }
   .footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem; }
   .footer-logo { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 0.6rem; display: block; }
   .footer-brand p { font-size: 0.8rem; color: #6a7fa8; line-height: 1.7; }
@@ -181,11 +206,11 @@
   .pay-modal-box .pay-plan-info strong { color: var(--blue); }
   .pay-form-group { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
   .pay-form-label { font-size: 0.78rem; font-weight: 700; color: #444; }
-  .pay-form-input { border: 1.5px solid var(--border); padding: 0.75rem 0.9rem; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; outline: none; border-radius: 6px; color: var(--black); transition: border-color 0.2s; }
+  .pay-form-input { border: 1.5px solid var(--border); padding: 0.75rem 0.9rem; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; outline: none; border-radius: 6px; color: var(--black); transition: border-color 0.2s; }
   .pay-form-input:focus { border-color: var(--blue); }
   .pay-btn-row { display: flex; gap: 0.7rem; margin-top: 1.2rem; }
-  .pay-cancel-btn { flex: 1; padding: 0.85rem; background: #f5f7ff; border: 1.5px solid var(--border); border-radius: 6px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--gray); cursor: pointer; }
-  .pay-submit-btn { flex: 2; padding: 0.85rem; background: var(--blue); border: none; border-radius: 6px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.9rem; font-weight: 700; color: #fff; cursor: pointer; transition: background 0.15s; }
+  .pay-cancel-btn { flex: 1; padding: 0.85rem; background: #f5f7ff; border: 1.5px solid var(--border); border-radius: 6px; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--gray); cursor: pointer; }
+  .pay-submit-btn { flex: 2; padding: 0.85rem; background: var(--blue); border: none; border-radius: 6px; font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif; font-size: 0.9rem; font-weight: 700; color: #fff; cursor: pointer; transition: background 0.15s; }
   .pay-submit-btn:hover { background: var(--blue-dark); }
   .pay-submit-btn:disabled { background: #aaa; cursor: not-allowed; }
   .pay-note { font-size: 0.72rem; color: #aaa; text-align: center; margin-top: 0.8rem; line-height: 1.6; }
@@ -199,6 +224,7 @@
   .pay-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.8rem; font-size: 0.85rem; color: var(--gray); }
   .pay-total strong { font-size: 1.15rem; color: var(--black); }
 
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
   /* MODAL */
@@ -228,23 +254,21 @@
 </nav>
 
 <section class="hero">
-  <div class="hero-bg-circle"></div>
+  <div class="hero-photo">
+    <img src="img/main-floor.jpg" alt="990짐 7층 웨이트 존, 창으로 자연광이 들어오는 모습" width="1200" height="1800" fetchpriority="high">
+  </div>
   <div class="hero-content">
-    <div class="hero-badge">🏋️ 월 구독 헬스장</div>
-    <h1>당신의 하루가<br>머무르는 순간,<br><span class="accent">990짐</span></h1>
-    <p class="hero-sub">복잡한 계약 없이, 언제든 해지 가능한 구독형 헬스장. 합리적인 가격으로 프리미엄 시설을 경험하세요.</p>
+    <h1>당신의 하루가<br>머무르는 순간,<br>990짐</h1>
+    <p class="hero-sub">삼송·신원동 7층, 창으로 햇빛이 드는 헬스장이에요. 기구 사이를 넉넉하게 띄워 두어 동선이 편하고, 약정 없는 월 구독이라 언제든 그만둘 수 있어요.</p>
     <div class="hero-actions">
       <button class="btn-primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">요금제 보기</button>
-      <button class="btn-outline" onclick="document.getElementById('signup').scrollIntoView({behavior:'smooth'})">구독 신청하기</button>
+      <button class="btn-outline" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">공간 둘러보기</button>
     </div>
-    <div class="hero-stat-row">
-      <div class="hero-stat"><div class="num">990원~</div><div class="label">일 환산 최저가</div></div>
-      <div class="hero-stat"><div class="num">24시간</div><div class="label">연중무휴 운영</div></div>
-      <div class="hero-stat"><div class="num">언제든</div><div class="label">자유로운 해지</div></div>
-    </div>
-  </div>
-  <div class="hero-image">
-    <img src="gym-main.jpeg" alt="990짐 트레이닝 공간" loading="eager">
+    <dl class="hero-facts">
+      <div><dt>월 구독</dt><dd>39,000원부터</dd></div>
+      <div><dt>약정</dt><dd>없음</dd></div>
+      <div><dt>평일 운영</dt><dd>06:00–23:30</dd></div>
+    </dl>
   </div>
 </section>
 
@@ -299,16 +323,50 @@
   </div>
 </section>
 
-<section class="section" id="features">
-  <div class="section-label">시설 안내</div>
-  <h2 class="section-title">프리미엄 시설을 합리적으로</h2>
-  <div class="features-grid">
-    <div class="feature-item"><span class="feature-icon">🏋️</span><div class="feature-title">웨이트 존</div><p class="feature-desc">최신 머신과 프리웨이트 기구를 갖춘 쾌적한 트레이닝 공간.</p></div>
-    <div class="feature-item"><span class="feature-icon">🚴</span><div class="feature-title">유산소 구역</div><p class="feature-desc">트레드밀, 사이클, 천국의 계단 등 다양한 유산소 기구 보유.</p></div>
-    <div class="feature-item"><span class="feature-icon">🧘</span><div class="feature-title">GX 스튜디오</div><p class="feature-desc">필라테스, 요가, 스피닝, 줌바 등 전문 강사진의 그룹 수업.</p></div>
-    <div class="feature-item"><span class="feature-icon">🚿</span><div class="feature-title">샤워 & 락커</div><p class="feature-desc">청결하게 관리되는 샤워 시설과 개인 락커 제공.</p></div>
-    <div class="feature-item"><span class="feature-icon">📊</span><div class="feature-title">인바디 측정</div><p class="feature-desc">체성분 분석으로 효과적인 운동 계획을 세우세요.</p></div>
-    <div class="feature-item"><span class="feature-icon">🕐</span><div class="feature-title">무제한 입장</div><p class="feature-desc">언제든지 내 스케줄에 맞게 무제한으로 이용 가능.</p></div>
+<section class="tour" id="features">
+  <div class="tour-head">
+    <h2>운동하고, 숨 고르고,<br>풀고 가는 곳</h2>
+    <p>990짐은 한 층 전체를 씁니다. 운동하는 자리와 쉬는 자리를 나눠 두었어요.</p>
+  </div>
+
+  <div class="zone">
+    <div class="zone-photo"><img src="img/main-recovery.jpg" alt="창가 계단식 휴식 공간과 990gym 사인" loading="lazy" width="1100" height="1650"></div>
+    <div class="zone-text">
+      <div class="wayfind"><b>Recovery step</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <h3>잠시 앉아<br>호흡을 가다듬는 공간</h3>
+      <p>세트 사이, 운동이 끝난 뒤. 창가 계단에 앉아 쉬어 가세요. 운동과 휴식이 자연스럽게 이어지도록 만든 자리예요.</p>
+    </div>
+  </div>
+
+  <div class="zone flip">
+    <div class="zone-photo"><img src="img/main-stretch.jpg" alt="은은한 조명이 깔린 스트레칭 존 매트" loading="lazy" width="1100" height="1650"></div>
+    <div class="zone-text">
+      <div class="wayfind"><b>Stretching zone</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <h3>당신의 하루에도<br>이완이 필요하니까</h3>
+      <p>매트가 깔린 스트레칭 존에서 몸을 풀고 마무리하세요. 몸과 마음의 균형을 찾는 시간이에요.</p>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zone-photo"><img src="img/spin-room-1.jpg" alt="조명과 사운드를 갖춘 스피닝룸" loading="lazy" width="1400" height="788"></div>
+    <div class="zone-text">
+      <div class="wayfind"><b>스피닝룸</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 3 L7 9" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 4 L7 9 L13 14" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,23 36,14 6,27 36,38 36,31 166,29" fill="#2B5FC7"/></svg></div>
+      <h3>불 끄고, 음악 켜고,<br>페달.</h3>
+      <p>삼송·신원동에 하나뿐인 스피닝룸이에요. 프리미엄 구독이면 스피닝과 요가·필라테스·줌바 수업을 무제한으로 들을 수 있어요.</p>
+      <a href="spinning.html">스피닝 시간표 보기</a>
+    </div>
+  </div>
+</section>
+
+<section class="details">
+  <div class="details-inner">
+    <h2>작은 것까지 정돈했어요</h2>
+    <p class="lead">처음 와도 헤매지 않게, 오래 있어도 편하게.</p>
+    <div class="detail-row">
+      <figure><img src="img/main-sign.jpg" alt="인포 데스크 뒤 990gym 로고 사인" loading="lazy" width="900" height="1350"><figcaption>처음 오시면 인포 데스크에서 안내해 드려요</figcaption></figure>
+      <figure><img src="img/main-sound.jpg" alt="벽에 매립된 스피커와 스트레칭 존 안내 표지" loading="lazy" width="900" height="1350"><figcaption>벽에 매립한 스피커로 음악이 흘러요</figcaption></figure>
+      <figure><img src="img/main-wayfind.jpg" alt="탈의실, 샤워실, 화장실, 스피닝룸 방향 안내 표지" loading="lazy" width="900" height="1350"><figcaption>탈의실·샤워실·스피닝룸까지 표지만 따라오세요</figcaption></figure>
+    </div>
   </div>
 </section>
 
