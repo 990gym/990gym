@@ -114,9 +114,21 @@
   .crew-facts { margin-top: 1.3rem; display: grid; grid-template-columns: auto 1fr; gap: 0.55rem 1.2rem; max-width: 28em; }
   .crew-facts dt { color: #8a8d93; font-size: 0.9rem; }
   .crew-facts dd { margin: 0; color: var(--ink); font-weight: 600; font-size: 0.95rem; word-break: keep-all; }
+  .crew-facts dd small { color: #8a8d93; font-weight: 500; font-size: 0.85em; }
   @media (min-width: 900px) {
     .crew { grid-template-columns: 0.8fr 1.2fr; gap: 4rem; align-items: center; margin-bottom: 6rem; }
     .crew-video { order: 2; }
+  }
+
+  .crew-row { max-width: 1240px; margin: -2rem auto 4.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem 0.9rem; }
+  .crew-row figure { margin: 0; }
+  .crew-row img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 18px; }
+  .crew-row figcaption { margin-top: 0.55rem; font-size: 0.85rem; color: #55585f; }
+  @media (min-width: 900px) { .crew-row { grid-template-columns: repeat(6, 1fr); margin-top: -3rem; margin-bottom: 6rem; } }
+  @media (max-width: 600px) {
+    .crew-row { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 42%; overflow-x: auto; scroll-snap-type: x mandatory; margin-right: -1.5rem; padding-right: 1.5rem; scrollbar-width: none; }
+    .crew-row::-webkit-scrollbar { display: none; }
+    .crew-row figure { scroll-snap-align: start; }
   }
 
   /* 디테일 띠 */
@@ -434,18 +446,27 @@
     <div class="zone-text">
       <div class="wayfind"><b>런990크루</b><svg viewBox="0 0 168 38" aria-hidden="true"><path d="M166 6 L7 6" stroke="#1b1d22" stroke-width="2" fill="none"/><path d="M13 1 L7 6 L13 11" stroke="#1b1d22" stroke-width="2" fill="none"/><polygon points="166,21 36,21 36,13 6,25 36,37 36,29 166,29" fill="#2B5FC7"/></svg></div>
       <h3>센터 밖에서도<br>같이 달려요</h3>
-      <p>2025년 10월에 시작한 990짐 러닝크루예요. 비 오는 날도, 눈 오는 날도 같이 달리다 보니 1년이 됐어요.</p>
+      <p>2025년 10월에 시작한 990짐 러닝크루예요. 비 오는 날도, 눈 오는 날도 같이 달리다 보니 1년이 됐어요. 990짐 회원이 아니어도 함께할 수 있어요.</p>
       <dl class="crew-facts">
-        <dt>모이는 곳</dt><dd>오전 9시, 990짐 센터</dd>
+        <dt>언제</dt><dd>매주 토요일 오전 9시 <small>(겨울엔 10시)</small></dd>
+        <dt>어디서</dt><dd>990짐 센터에서 모여 출발</dd>
         <dt>거리</dt><dd>3–7km</dd>
         <dt>끝나고</dt><dd>리커버리 스트레칭, 그리고 커피</dd>
-        <dt>참가비</dt><dd>월 3만 원</dd>
+        <dt>참가비</dt><dd>월 3만 원 <small>(체험 가능)</small></dd>
       </dl>
       <a href="http://pf.kakao.com/_SxakPn" target="_blank" rel="noopener">카카오톡으로 참여 문의하기</a>
     </div>
     <div class="crew-video">
       <video src="img/run990.mp4" poster="img/run990-poster.jpg" muted loop playsinline preload="none" width="960" height="540" aria-label="런990크루 1주년 영상: 계절마다 함께 달린 모습"></video>
     </div>
+  </div>
+  <div class="crew-row">
+    <figure><img src="img/crew/crew-autumn.jpg" alt="단풍 든 산책로를 함께 걷는 크루" loading="lazy" width="600" height="800"><figcaption>가을</figcaption></figure>
+    <figure><img src="img/crew/crew-winter.jpg" alt="겨울 숲길을 달리는 크루" loading="lazy" width="600" height="800"><figcaption>겨울</figcaption></figure>
+    <figure><img src="img/crew/crew-spring.jpg" alt="꽃이 핀 봄 산책로를 달리는 크루" loading="lazy" width="600" height="800"><figcaption>봄</figcaption></figure>
+    <figure><img src="img/crew/crew-summer.jpg" alt="여름 천변길을 달리는 크루" loading="lazy" width="600" height="800"><figcaption>여름</figcaption></figure>
+    <figure><img src="img/crew/crew-hands.jpg" alt="달리기를 마치고 손을 모은 크루" loading="lazy" width="600" height="800"><figcaption>오늘도 런 완료</figcaption></figure>
+    <figure><img src="img/crew/crew-coffee.jpg" alt="달리고 나서 함께 커피를 마시는 크루" loading="lazy" width="600" height="800"><figcaption>끝나고 커피</figcaption></figure>
   </div>
 </section>
 
