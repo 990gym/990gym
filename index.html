@@ -57,22 +57,31 @@
   .hero-photo { position: relative; height: 62vh; min-height: 380px; overflow: hidden; }
   .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; display: block; }
   .hero-content { padding: 2.2rem 1.5rem 3rem; }
-  .hero h1 { font-size: clamp(2.3rem, 8.5vw, 5.6rem); font-weight: 800; line-height: 1.12; letter-spacing: -0.045em; color: var(--ink); word-break: keep-all; }
+  .hero h1 { font-size: clamp(2.3rem, 8.5vw, 4.6rem); font-weight: 800; line-height: 1.12; letter-spacing: -0.045em; color: var(--ink); word-break: keep-all; }
   .hero-sub { margin-top: 1.2rem; font-size: clamp(0.98rem, 2vw, 1.12rem); color: #55585f; line-height: 1.75; max-width: 30em; word-break: keep-all; }
-  .hero-actions { margin-top: 2rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .hero-actions { margin-top: 1.8rem; display: flex; gap: 0.7rem; flex-wrap: wrap; }
   .btn-primary { background: var(--blue); color: var(--white); border: none; padding: 1rem 1.7rem; font-family: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; border-radius: 999px; transition: background 0.15s; }
   .btn-primary:hover { background: var(--blue-dark); }
   .btn-outline { background: transparent; color: var(--ink); border: 1.5px solid #c9c9c2; padding: 1rem 1.7rem; font-family: inherit; font-weight: 600; font-size: 1rem; cursor: pointer; border-radius: 999px; transition: border-color 0.15s; }
   .btn-outline:hover { border-color: var(--ink); }
-  .hero-facts { margin-top: 2.6rem; display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0.4rem 2.2rem; }
+  .hero h1 .brand { color: var(--blue); }
+  .hero-meta { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 1.6rem 3.2rem; align-items: flex-start; }
+  .hero-facts { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; gap: 0.4rem 2.6rem; }
+  .hours { min-width: 15rem; }
+  .hours h2 { font-size: 0.78rem; font-weight: 500; color: #8a8c90; }
+  .hours table { margin-top: 0.2rem; border-collapse: collapse; width: 100%; }
+  .hours th { text-align: left; font-weight: 500; color: #55585f; font-size: 0.95rem; padding: 0.3rem 1.5rem 0.3rem 0; white-space: nowrap; width: 1%; }
+  .hours td { font-weight: 700; color: var(--ink); font-size: 1rem; padding: 0.3rem 0; font-variant-numeric: tabular-nums; }
   .hero-facts dt { font-size: 0.78rem; color: #8a8c90; }
+  .hero-facts dd { white-space: nowrap; }
   .hero-facts dd { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-top: 0.15rem; }
   @media (min-width: 900px) {
-    .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); min-height: 100vh; align-items: stretch; }
+    .hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: stretch; }
     .hero-content { order: 1; display: flex; flex-direction: column; justify-content: center; padding: 4rem 3.5rem 4rem max(3rem, calc((100vw - 1240px) / 2)); }
+    .hero { min-height: calc(100vh - 4.2rem); }
     .hero-photo { order: 2; height: auto; min-height: 0; border-bottom-left-radius: 56px; }
+    .hero-photo img { position: absolute; inset: 0; }
   }
-  @media (max-width: 420px) { .hero-facts { grid-template-columns: repeat(2, auto); } }
 
   /* 길 안내 표지 — 990짐 벽면 사인을 그대로 옮긴 장치. 공간 투어의 각 구역 이름에만 쓴다 */
   .wayfind { display: inline-grid; grid-template-columns: auto; justify-items: end; gap: 0.35rem; }
@@ -258,17 +267,26 @@
     <img src="img/main-floor.jpg" alt="990짐 7층 웨이트 존, 창으로 자연광이 들어오는 모습" width="1200" height="1800" fetchpriority="high">
   </div>
   <div class="hero-content">
-    <h1>당신의 하루가<br>머무르는 순간,<br>990짐</h1>
+    <h1>당신의 하루가<br>머무르는 순간,<br><span class="brand">990짐</span></h1>
     <p class="hero-sub">삼송·신원동 7층, 창으로 햇빛이 드는 헬스장이에요. 기구 사이를 넉넉하게 띄워 두어 동선이 편하고, 약정 없는 월 구독이라 언제든 그만둘 수 있어요.</p>
     <div class="hero-actions">
       <button class="btn-primary" onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})">요금제 보기</button>
       <button class="btn-outline" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">공간 둘러보기</button>
     </div>
+    <div class="hero-meta">
     <dl class="hero-facts">
       <div><dt>월 구독</dt><dd>39,000원부터</dd></div>
       <div><dt>약정</dt><dd>없음</dd></div>
-      <div><dt>평일 운영</dt><dd>06:00–23:30</dd></div>
     </dl>
+    <div class="hours">
+      <h2>운영시간</h2>
+      <table>
+        <tr><th>평일</th><td>06:00 – 23:30</td></tr>
+        <tr><th>주말 · 공휴일</th><td>09:00 – 20:00</td></tr>
+        <tr><th>휴관</th><td>매월 2·4째 주 일요일</td></tr>
+      </table>
+    </div>
+    </div>
   </div>
 </section>
 
