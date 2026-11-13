@@ -131,6 +131,23 @@
   .offer-price s { font-size: 0.5em; font-weight: 500; color: var(--muted); margin-right: 8px; }
   .offer-price .off { display: inline-block; vertical-align: middle; margin-left: 8px; font-size: 0.38em; font-weight: 900; color: #fff; background: var(--pink); padding: 3px 8px; border-radius: 999px; letter-spacing: 0; }
   .offer-after { margin-top: 2px; font-size: 0.82rem; color: var(--muted); }
+  /* 실제 스피닝룸 사진 */
+  .room { padding-top: 44px; }
+  .room h2 { font-size: 1.45rem; font-weight: 900; letter-spacing: -0.5px; }
+  .room .room-sub { margin-top: 6px; color: var(--muted); font-size: 0.9rem; }
+  .shots { display: flex; gap: 10px; margin: 16px -20px 0; padding: 0 20px 4px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .shots::-webkit-scrollbar { display: none; }
+  .shots figure { flex: 0 0 86%; scroll-snap-align: start; margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+  .shots img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+  .shots-hint { margin-top: 8px; font-size: 0.75rem; color: var(--muted); }
+  @media (min-width: 900px) {
+    .room { padding-top: 120px; }
+    .room h2 { font-size: 3.2rem; letter-spacing: -1.5px; }
+    .room .room-sub { font-size: 1.1rem; margin-top: 10px; }
+    .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 32px 0 0; padding: 0; overflow: visible; }
+    .shots-hint { display: none; }
+  }
+
   /* 결제창 안심 문구 */
   .assure { background: #fff0f7; border: 1.5px solid #ffc2e0; border-radius: 12px; padding: 12px 14px; margin: 0 0 16px; }
   .assure div { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9rem; color: #222; line-height: 1.5; padding: 3px 0; }
@@ -265,6 +282,17 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
       <button class="cta" id="hero-cta" onclick="openSheet()">지금 시작하기 →</button>
       <p class="cta-note">카드 등록 1분 · 등록 즉시 이용 가능</p>
     </div>
+  </section>
+
+  <section class="room">
+    <h2>실제 스피닝룸이에요</h2>
+    <p class="room-sub">990짐 7층 · 조명과 사운드를 갖춘 스피닝 전용룸</p>
+    <div class="shots">
+      <figure><img src="img/spin-room-1.jpg" alt="990짐 스피닝룸 전경" loading="lazy" width="1400" height="788"></figure>
+      <figure><img src="img/spin-room-2.jpg" alt="990짐 스피닝룸 바이크와 거울" loading="lazy" width="1400" height="788"></figure>
+      <figure><img src="img/spin-room-3.jpg" alt="990짐 스피닝룸 창가 쪽" loading="lazy" width="1400" height="788"></figure>
+    </div>
+    <p class="shots-hint">← 옆으로 넘겨 보세요</p>
   </section>
 
   <div class="grid2">
