@@ -807,7 +807,7 @@ async function copyConsentMessage(id) {
   if (!s) return;
   if (!s.consent_token) { alert('동의 링크가 없습니다. (Supabase에 consent_token 칸이 추가됐는지 확인해주세요)'); return; }
   const due = s.next_billing_date ? new Date(`${String(s.next_billing_date).slice(0,10)}T00:00:00+09:00`) : null;
-  const opens = due ? new Date(due.getTime() - 14 * 86400000) : null;
+  const opens = due ? new Date(due.getTime() - CONSENT_OPEN_DAYS * 86400000) : null;
   const fmt = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
   if (opens && new Date() < opens) {
     if (!confirm(`아직 안내 기간 전입니다. ${fmt(opens)}부터 손님이 동의할 수 있어요.\n그래도 문자를 복사할까요?`)) return;
