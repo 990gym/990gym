@@ -108,6 +108,9 @@
     .zone.flip .zone-photo { order: 2; }
     .zone.flip .zone-text { order: 1; }
     .zone-photo img { aspect-ratio: 4 / 4.6; }
+    /* PC: 사진이 오른쪽에 있는 구역은 화살표도 오른쪽(사진 쪽)을 가리키게 */
+    .zone.flip .wayfind, .crew .wayfind { justify-items: start; }
+    .zone.flip .wayfind svg, .crew .wayfind svg { transform: scaleX(-1); }
   }
 
   /* 런990크루 — 센터 밖 활동. 영상이 주인공 */
