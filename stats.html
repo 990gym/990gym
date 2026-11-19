@@ -290,7 +290,7 @@ function buildIntervals(subs, events) {
     const sid = String(s.id);
     const evs = (bySid.get(sid) || []).slice().sort((a, b) => (Date.parse(a.occurred_at) - Date.parse(b.occurred_at)) || ((a.id || 0) - (b.id || 0)));
     let cur = null, had = false, lastClosed = null, lastT = null;
-    const open = (t, plan) => { cur = { sid, start: t, end: null, endType: null, reason: null, first: !had, plans: [{ t, plan: plan || s.plan }] }; had = true; };
+    const open = (t, plan) => { cur = { sid, start: t, end: null, endType: null, reason: null, first: !had, resumed: !!(lastClosed && lastClosed.endType === 'pause'), plans: [{ t, plan: plan || s.plan }] }; had = true; };
     const close = (t, type, reason) => { cur.end = Math.max(t, cur.start); cur.endType = type; cur.reason = reason || null; intervals.push(cur); lastClosed = cur; cur = null; };
     for (const e of evs) {
       const t = Date.parse(e.occurred_at);
@@ -302,6 +302,8 @@ function buildIntervals(subs, events) {
       } else if (e.event_type === 'cancel' || e.event_type === 'payment_failed') {
         if (cur) close(t, e.event_type === 'cancel' ? 'cancel' : 'failed', e.reason);
         else if (e.event_type === 'cancel' && e.reason && lastClosed && !lastClosed.reason) lastClosed.reason = e.reason; // 결제실패 후 센터에서 해지 처리 → 사유만 연결
+      } else if (e.event_type === 'pause') {
+        if (cur) close(t, 'pause', null);   // 쉬어가기: 해지가 아니라 잠시 멈춤 (이탈로 세지 않음)
       } else if (e.event_type === 'plan_change' && cur && e.plan) {
         cur.plans.push({ t, plan: e.plan });
       }
@@ -313,6 +315,7 @@ function buildIntervals(subs, events) {
     }
     if (cur) {
       if (s.status === 'active') { if (s.plan && cur.plans[cur.plans.length - 1].plan !== s.plan) cur.plans.push({ t: now, plan: s.plan }); intervals.push(cur); }
+      else if (s.status === 'paused') { const pa = Date.parse(s.paused_at); close(isFinite(pa) && pa > cur.start ? pa : now, 'pause', null); }
       else {
         const ca = Date.parse(s.cancelled_at);
         const t = isFinite(ca) && ca > cur.start ? ca : Math.min(addMonths(cur.start, 1), now);
@@ -341,17 +344,17 @@ function computeStats(subs, events) {
   const months = [];
   for (let mi = firstMi; mi <= curMi; mi++) {
     const S = monthStart(mi), E = mi === curMi ? now : monthStart(mi + 1);
-    const m = { mi, partial: mi === curMi, S, E, newC: 0, retC: 0, cancelC: 0, failC: 0 };
+    const m = { mi, partial: mi === curMi, S, E, newC: 0, retC: 0, cancelC: 0, failC: 0, pauseC: 0, resumeC: 0 };
     m.startActive = ivs.filter(i => isActiveAt(i, S)).length;
     for (const i of ivs) {
-      if (i.start >= S && i.start < E) i.first ? m.newC++ : m.retC++;
-      if (i.end !== null && i.end >= S && i.end < E) i.endType === 'cancel' ? m.cancelC++ : m.failC++;
+      if (i.start >= S && i.start < E) i.first ? m.newC++ : i.resumed ? m.resumeC++ : m.retC++;
+      if (i.end !== null && i.end >= S && i.end < E) i.endType === 'cancel' ? m.cancelC++ : i.endType === 'pause' ? m.pauseC++ : m.failC++;
     }
     const activeEnd = ivs.filter(i => isActiveAt(i, E));
     m.endActive = activeEnd.length;
     m.mrr = activeEnd.reduce((sum, i) => sum + (PLAN_PRICES[planAt(i, E)] || 0), 0);
     m.churnC = m.cancelC + m.failC;
-    m.net = m.newC + m.retC - m.churnC;
+    m.net = m.newC + m.retC + m.resumeC - m.churnC - m.pauseC;
     m.base = m.startActive;
     m.newRate = m.base >= 5 ? m.newC / m.base : null;
     m.churnRate = m.base >= 5 ? m.churnC / m.base : null;
@@ -370,7 +373,7 @@ function computeStats(subs, events) {
   }
 
   // 이탈 시점 (구독 시작 후 며칠 만에 나갔나)
-  const ended = ivs.filter(i => i.end !== null);
+  const ended = ivs.filter(i => i.end !== null && i.endType !== 'pause');   // 쉬어가기는 이탈 분석에서 뺀다
   // k개월 차 이탈 = k번째 달이 끝나기 전(또는 끝나는 시점)에 그만둠. 1 = 첫 달만 이용
   const tenureMonths = i => { let k = 1; while (k < 60 && i.end > addMonths(i.start, k) + 2 * DAY) k++; return k; };
   const byTenure = {};
@@ -393,13 +396,13 @@ function computeStats(subs, events) {
 
   // 복귀
   const stoppedPeople = new Set(ended.map(i => i.sid));
-  const returners = new Set(ivs.filter(i => !i.first).map(i => i.sid));
+  const returners = new Set(ivs.filter(i => !i.first && !i.resumed).map(i => i.sid));
   const gaps = [];
   const bySid = {};
   for (const i of ivs) (bySid[i.sid] = bySid[i.sid] || []).push(i);
   for (const list of Object.values(bySid)) {
     list.sort((a, b) => a.start - b.start);
-    for (let j = 1; j < list.length; j++) if (list[j - 1].end !== null) gaps.push((list[j].start - list[j - 1].end) / DAY);
+    for (let j = 1; j < list.length; j++) if (list[j - 1].end !== null && list[j - 1].endType !== 'pause') gaps.push((list[j].start - list[j - 1].end) / DAY);
   }
   const failedEnds = ended.filter(i => i.endType === 'failed');
   const failedRecovered = failedEnds.filter(i => (bySid[i.sid] || []).some(x => x.start >= i.end)).length;
@@ -797,8 +800,8 @@ function render() {
     <div class="card table-card">
       <div class="card-head"><div class="card-title">월별 데이터</div><div class="card-sub">* 표시는 아직 진행 중인 달이에요.</div></div>
       <div class="table-scroll"><table>
-        <thead><tr><th>월</th><th>월초 활성</th><th>신규</th><th>복귀</th><th>해지</th><th>결제실패</th><th>순증</th><th>월말 활성</th><th>신규율</th><th>이탈률</th><th>월 반복매출</th></tr></thead>
-        <tbody>${ms.slice().reverse().map(m => `<tr class="${m.partial ? 'partial' : ''}"><td>${monthLabelFull(m.mi)}${m.partial ? '*' : ''}</td><td>${fmtInt(m.startActive)}</td><td>${m.newC}</td><td>${m.retC}</td><td>${m.cancelC}</td><td>${m.failC}</td><td>${signed(m.net)}</td><td>${fmtInt(m.endActive)}</td><td>${fmtPct(m.newRate)}</td><td>${fmtPct(m.churnRate)}</td><td>${fmtWon(m.mrr)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>월</th><th>월초 활성</th><th>신규</th><th>복귀</th><th>해지</th><th>결제실패</th><th>쉼/재시작</th><th>순증</th><th>월말 활성</th><th>신규율</th><th>이탈률</th><th>월 반복매출</th></tr></thead>
+        <tbody>${ms.slice().reverse().map(m => `<tr class="${m.partial ? 'partial' : ''}"><td>${monthLabelFull(m.mi)}${m.partial ? '*' : ''}</td><td>${fmtInt(m.startActive)}</td><td>${m.newC}</td><td>${m.retC}</td><td>${m.cancelC}</td><td>${m.failC}</td><td>${m.pauseC || m.resumeC ? `${m.pauseC}/${m.resumeC}` : '-'}</td><td>${signed(m.net)}</td><td>${fmtInt(m.endActive)}</td><td>${fmtPct(m.newRate)}</td><td>${fmtPct(m.churnRate)}</td><td>${fmtWon(m.mrr)}</td></tr>`).join('')}</tbody>
       </table></div>
     </div>
 

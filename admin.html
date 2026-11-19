@@ -130,6 +130,13 @@
   .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--navy); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: #c7d2e8; text-underline-offset: 3px; }
   .name-link:hover { color: var(--blue); text-decoration-color: var(--blue); }
   .badge-failed { background: #fef3c7; color: #b45309; }
+  .badge-paused { background: #e0e7ff; color: #4338ca; }
+  .resume-date { display: block; margin-top: 3px; font-size: 11px; color: #4338ca; white-space: nowrap; }
+  .tl-pause .tl-dot { background: #6366f1; }
+  .btn-pause { background: #eef2ff; color: #4338ca; }
+  .pause-usage { margin: 10px 0 4px; padding: 10px 12px; border-radius: 10px; background: #f5f7fb; font-size: 13px; line-height: 1.6; }
+  .pause-usage.over { background: #fff7ed; color: #9a3412; }
+  .pause-info { margin-top: 10px; font-size: 12px; color: var(--text-light); line-height: 1.7; }
   .history-modal { width: 460px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; padding: 28px 28px 20px; }
   .history-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   .history-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--text-light); cursor: pointer; padding: 2px 4px; }
@@ -216,7 +223,7 @@
       <div class="stat-card">
         <div class="stat-label">활성 구독자</div>
         <div class="stat-value" id="stat-active" style="color:var(--green)">-</div>
-        <div class="stat-sub">현재</div>
+        <div class="stat-sub" id="stat-active-sub">현재</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">해지 회원</div>
@@ -237,7 +244,7 @@
 
     <div class="todo-panel" id="todo-panel">
       <div class="todo-title" id="todo-title"></div>
-      <div class="todo-sub">스피닝 첫 달 50% 회원 · 손님이 동의해야 다음 달 99,000원 자동결제 (동의 없으면 결제일에 자동 종료)</div>
+      <div class="todo-sub" id="todo-sub"></div>
       <div class="todo-list" id="todo-list"></div>
     </div>
 
@@ -324,6 +331,35 @@
     <div class="modal-btns" style="margin-top:20px;">
       <button class="modal-btn modal-btn-cancel" onclick="closeAddonModal()">취소</button>
       <button class="modal-btn modal-btn-confirm blue" id="addon-confirm-btn" onclick="confirmAddonChange()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pause-modal">
+  <div class="modal">
+    <div class="modal-title" id="pause-modal-title">쉬어가기</div>
+    <div class="modal-desc" id="pause-modal-desc" style="margin-bottom:8px;"></div>
+    <div class="billing-quick">
+      <button type="button" onclick="setPauseDays(14)">2주</button>
+      <button type="button" onclick="setPauseMonths(1)">1개월</button>
+      <button type="button" onclick="setPauseMonths(2)">2개월</button>
+      <button type="button" onclick="setPauseMonths(3)">3개월</button>
+    </div>
+    <div class="billing-row">
+      <label>재시작일</label>
+      <input type="date" id="pause-date" oninput="renderPausePreview()">
+    </div>
+    <div class="billing-preview" id="pause-preview"></div>
+    <div class="billing-error" id="pause-error"></div>
+    <div class="pause-usage" id="pause-usage"></div>
+    <div class="pause-info">
+      · 이미 결제한 기간은 끝까지 이용하고, 원래 결제일부터 쉬어요. 쉬는 동안은 결제가 없어요.<br>
+      · 다시 시작하는 날 오후 6시에 등록된 카드로 자동결제되고, 그날부터 매달 같은 날짜로 이어져요.<br>
+      · 재시작 3일 전 '오늘 할 일'에 안내 문자가 떠요. 쉬는 동안 브로제이 출입은 막아주세요.
+    </div>
+    <div class="modal-btns" style="margin-top:20px;">
+      <button class="modal-btn modal-btn-cancel" onclick="closePauseModal()">취소</button>
+      <button class="modal-btn modal-btn-confirm blue" id="pause-confirm-btn" onclick="confirmPause()">쉬어가기</button>
     </div>
   </div>
 </div>
@@ -514,6 +550,8 @@ function renderStats() {
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-cancelled').textContent = cancelled;
   document.getElementById('stat-failed').textContent = subscribers.filter(s => s.status === 'payment_failed').length;
+  const paused = subscribers.filter(s => s.status === 'paused').length;
+  document.getElementById('stat-active-sub').textContent = paused ? `현재 · 쉬는 중 ${paused}명 별도` : '현재';
   document.getElementById('stat-revenue').textContent = revenue.toLocaleString();
 }
 
@@ -532,6 +570,8 @@ function renderTable() {
     const cancelledAt = s.cancelled_at ? new Date(s.cancelled_at).toLocaleDateString('ko-KR') : '-';
     const statusBadge = s.status === 'active'
       ? '<span class="badge badge-active">활성</span>'
+      : s.status === 'paused'
+        ? `<span class="badge badge-paused">쉬는 중</span><span class="resume-date">${s.next_billing_date ? fmtYmdKo(String(s.next_billing_date).slice(0, 10)) + ' 재시작' : ''}</span>`
       : s.status === 'payment_failed'
         ? '<span class="badge badge-failed">결제실패</span>'
         : '<span class="badge badge-cancelled">해지</span>';
@@ -541,7 +581,12 @@ function renderTable() {
            ? `<button class="action-btn btn-consent" onclick="copyConsentMessage('${s.id}')">계속하기 문자</button>`
            : `<button class="action-btn btn-addon" onclick="openAddonModal('${s.id}')">옵션</button>`}
          <button class="action-btn btn-billing" onclick="openBillingModal('${s.id}')">결제일</button>
+         ${isPromoWaiting(s) ? '' : `<button class="action-btn btn-pause" onclick="openPauseModal('${s.id}')">쉬어가기</button>`}
          <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', nameOf('${s.id}'))">해지</button>`
+      : s.status === 'paused'
+        ? `<button class="action-btn btn-pause" onclick="openPauseModal('${s.id}')">재시작일 변경</button>
+           <button class="action-btn btn-activate" onclick="openResumeNowModal('${s.id}')">지금 다시 시작</button>
+           <button class="action-btn btn-cancel" onclick="openCancelModal('${s.id}', nameOf('${s.id}'))">해지</button>`
       : `<button class="action-btn btn-activate" onclick="openActivateModal('${s.id}', nameOf('${s.id}'))">복구</button>`;
     let churnCell = '-';
     if (s.status === 'cancelled') {
@@ -585,6 +630,18 @@ function openCancelModal(id, name) {
   etc.style.display = 'none';
   document.getElementById('churn-reason-wrap').style.display = 'block';
   currentAction = { type: 'cancel', id };
+  document.getElementById('confirm-modal').classList.add('active');
+}
+
+function openResumeNowModal(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) return;
+  document.getElementById('modal-title').textContent = '지금 다시 시작';
+  document.getElementById('modal-desc').textContent = `${s.name}님 쉬어가기를 끝내고 지금 다시 시작할까요? 바로 ${expectedAmount(s).toLocaleString()}원이 결제되고, 오늘부터 새 한 달이 시작돼요.`;
+  document.getElementById('modal-confirm-btn').className = 'modal-btn modal-btn-confirm green';
+  document.getElementById('modal-confirm-btn').textContent = '결제하고 다시 시작';
+  document.getElementById('churn-reason-wrap').style.display = 'none';
+  currentAction = { type: 'activate', id };
   document.getElementById('confirm-modal').classList.add('active');
 }
 
@@ -782,14 +839,29 @@ function renderTodo() {
   const panel = document.getElementById('todo-panel');
   if (!panel) return;
   const { send, remind } = consentTodo(subscribers);
-  if (!send.length && !remind.length) { panel.classList.remove('show'); return; }
-  document.getElementById('todo-title').textContent =
-    `📩 오늘 할 일 · 계속하기 문자 ${send.length}명${remind.length ? ` · 재안내 ${remind.length}명` : ''}`;
+  const now = new Date();
+  const resume = subscribers.filter(s => s.status === 'paused' && s.next_billing_date && !s.resume_msg_sent_at)
+    .map(s => ({ s, due: kstDue(s.next_billing_date), daysLeft: Math.ceil((kstDue(s.next_billing_date) - now) / 86400000) }))
+    .filter(x => x.daysLeft <= 3);
+  if (!send.length && !remind.length && !resume.length) { panel.classList.remove('show'); return; }
+  const parts = [];
+  if (send.length) parts.push(`계속하기 문자 ${send.length}명`);
+  if (remind.length) parts.push(`재안내 ${remind.length}명`);
+  if (resume.length) parts.push(`재시작 안내 ${resume.length}명`);
+  document.getElementById('todo-title').textContent = `📩 오늘 할 일 · ${parts.join(' · ')}`;
+  const subs = [];
+  if (send.length || remind.length) subs.push('스피닝 첫 달 50% 회원 · 손님이 동의해야 다음 달 99,000원 자동결제 (동의 없으면 결제일에 자동 종료)');
+  if (resume.length) subs.push('쉬어가기 회원 · 재시작 3일 전 안내 (문자 보낸 뒤 그날 자동결제로 다시 시작)');
+  document.getElementById('todo-sub').innerHTML = subs.map(escHtml).join('<br>');
   const row = ({ s, due, daysLeft }, kind) => `<div class="todo-item ${kind === 'remind' ? 'urgent' : ''}">
       <div><b>${escHtml(s.name)}</b><small>${escHtml(s.phone || '')} · 결제일 ${fmtMD(due)} (D-${Math.max(daysLeft, 0)})${kind === 'remind' ? ' · 문자 보냈는데 아직 동의 안 함' : ''}</small></div>
       <button class="action-btn btn-consent" onclick="copyConsentMessage('${s.id}')">${kind === 'remind' ? '다시 보내기' : '계속하기 문자'}</button>
     </div>`;
-  document.getElementById('todo-list').innerHTML = send.map(x => row(x, 'send')).join('') + remind.map(x => row(x, 'remind')).join('');
+  const resumeRow = ({ s, due, daysLeft }) => `<div class="todo-item">
+      <div><b>${escHtml(s.name)}</b><small>${escHtml(s.phone || '')} · 쉬어가기 끝 · ${fmtMD(due)} 재시작 (D-${Math.max(daysLeft, 0)})</small></div>
+      <button class="action-btn btn-pause" onclick="copyResumeMessage('${s.id}')">재시작 안내 문자</button>
+    </div>`;
+  document.getElementById('todo-list').innerHTML = send.map(x => row(x, 'send')).join('') + remind.map(x => row(x, 'remind')).join('') + resume.map(resumeRow).join('');
   panel.classList.add('show');
 }
 
@@ -882,7 +954,7 @@ async function confirmAddonChange() {
 // subscription_events 표(Supabase 트리거가 자동 기록)를 시간순으로 보여준다.
 // 표가 아직 없으면 subscribers 의 가입일/해지일만으로 간단히 보여준다.
 const EVENT_LABELS = {
-  signup: '가입', cancel: '해지', return: '복귀', payment_failed: '결제 실패', plan_change: '플랜 변경'
+  signup: '가입', cancel: '해지', return: '복귀', payment_failed: '결제 실패', plan_change: '플랜 변경', pause: '쉬어가기'
 };
 
 function fmtKstDate(iso) {
@@ -924,7 +996,7 @@ function fallbackEvents(s) {
 async function openHistory(id) {
   const s = subscribers.find(x => String(x.id) === String(id));
   if (!s) return;
-  const statusTxt = s.status === 'active' ? '활성' : s.status === 'payment_failed' ? '결제실패' : '해지';
+  const statusTxt = s.status === 'active' ? '활성' : s.status === 'paused' ? `쉬는 중 (${fmtYmdKo(String(s.next_billing_date).slice(0, 10))} 재시작)` : s.status === 'payment_failed' ? '결제실패' : '해지';
   document.getElementById('history-title').textContent = `${s.name || '-'}님 구독 이력`;
   document.getElementById('history-meta').textContent = `${s.phone || '-'} · 현재 ${s.plan || '-'} · ${statusTxt}`;
   document.getElementById('history-summary').innerHTML = '';
@@ -962,12 +1034,12 @@ function renderHistory(s, events, tableMissing) {
         }
       }
       activeSince = t; lastStop = null;
-    } else if (e.event_type === 'cancel' || e.event_type === 'payment_failed') {
+    } else if (e.event_type === 'cancel' || e.event_type === 'payment_failed' || e.event_type === 'pause') {
       if (e.event_type === 'cancel') cancels++;
       if (activeSince && !isUnknownDate(e)) {
         const d = Math.max(0, daysBetween(activeSince, t));
         totalDays += d;
-        const what = e.event_type === 'cancel' ? '해지' : '결제 중단';
+        const what = e.event_type === 'cancel' ? '해지' : e.event_type === 'pause' ? '쉬어가기' : '결제 중단';
         gap = d < 1 ? `시작 당일 ${what}` : `${fmtSpan(d, activeSince, t)} 이용 후 ${what}`;
       }
       activeSince = null; lastStop = e;
@@ -1038,6 +1110,116 @@ function fmtYmdKo(ymd) {
 function isValidYmd(s) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   return addDaysYmd(s, 0) === s;   // 2026-02-30 같은 없는 날짜 거르기
+}
+
+// ===== 쉬어가기 =====
+// 원래 결제일 기준 7일 뒤 ~ 90일 뒤 사이에서 재시작일을 고른다 (서버도 같은 범위로 검사).
+// 최근 12개월 2회까지가 원칙 — 막지는 않고 넘으면 한 번 더 확인한다.
+const PAUSE_MIN_DAYS = 7, PAUSE_MAX_DAYS = 90, PAUSE_PER_YEAR = 2;
+let currentPause = null;
+function pauseCount12m(s) {
+  const since = Date.now() - 365 * 86400000;
+  const evs = (eventsBySub && eventsBySub[s.id]) || [];
+  return evs.filter(e => e.event_type === 'pause' && Date.parse(e.occurred_at) >= since).length;
+}
+function addMonthsYmd(ymd, n) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m - 1 + n, Math.min(d, last))).toISOString().slice(0, 10);
+}
+function openPauseModal(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) { alert('회원 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.'); return; }
+  if (isPromoWaiting(s)) { alert('스피닝 첫 달 회원은 정가 동의 후에 쉬어가기를 쓸 수 있어요.'); return; }
+  const paused = s.status === 'paused';
+  const base = String((paused && s.pause_from_date) || s.next_billing_date || '').slice(0, 10);
+  if (!isValidYmd(base)) { alert('원래 결제일이 없어서 쉬어가기를 할 수 없어요. 먼저 결제일을 확인해주세요.'); return; }
+  const used = pauseCount12m(s);
+  currentPause = { id: s.id, name: s.name, paused, base, current: String(s.next_billing_date || '').slice(0, 10), used,
+    min: addDaysYmd(base, PAUSE_MIN_DAYS), max: addDaysYmd(base, PAUSE_MAX_DAYS) };
+  document.getElementById('pause-modal-title').textContent = paused ? '재시작일 변경' : '쉬어가기';
+  document.getElementById('pause-confirm-btn').textContent = paused ? '변경' : '쉬어가기';
+  document.getElementById('pause-modal-desc').textContent = paused
+    ? `${s.name}님 · 지금 ${fmtYmdKo(currentPause.current)} 재시작 예정 (원래 결제일 ${fmtYmdKo(base)})`
+    : `${s.name}님 · ${s.plan} · ${fmtYmdKo(base)}까지 이용하고 그다음부터 쉬어요`;
+  const inp = document.getElementById('pause-date');
+  inp.min = currentPause.min; inp.max = currentPause.max;
+  inp.value = paused ? currentPause.current : '';
+  const shown = paused ? used : used + 1;
+  const u = document.getElementById('pause-usage');
+  u.className = 'pause-usage' + (shown > PAUSE_PER_YEAR ? ' over' : '');
+  u.innerHTML = paused
+    ? `최근 12개월 쉬어가기 <b>${used}회</b> 사용 (원칙 ${PAUSE_PER_YEAR}회)`
+    : `이번이 최근 12개월 중 <b>${shown}번째</b> 쉬어가기예요 (원칙 ${PAUSE_PER_YEAR}회까지)` + (shown > PAUSE_PER_YEAR ? '<br>원칙보다 많아요. 부상 같은 특별한 사정일 때만 해주세요.' : '');
+  renderPausePreview();
+  document.getElementById('pause-modal').classList.add('active');
+}
+function closePauseModal() {
+  document.getElementById('pause-modal').classList.remove('active');
+  const btn = document.getElementById('pause-confirm-btn');
+  btn.disabled = false;
+  currentPause = null;
+}
+function setPauseDays(n) { if (!currentPause) return; document.getElementById('pause-date').value = addDaysYmd(currentPause.base, n); renderPausePreview(); }
+function setPauseMonths(n) { if (!currentPause) return; const v = addMonthsYmd(currentPause.base, n); document.getElementById('pause-date').value = v > currentPause.max ? currentPause.max : v; renderPausePreview(); }
+function pauseError(v) {
+  const a = currentPause;
+  if (!v) return '다시 시작하는 날을 골라주세요.';
+  if (!isValidYmd(v)) return '날짜 형식이 올바르지 않습니다.';
+  if (v < a.min || v > a.max) return `원래 결제일(${fmtYmdKo(a.base)}) 기준 ${PAUSE_MIN_DAYS}일 뒤 ~ ${PAUSE_MAX_DAYS}일 뒤(${fmtYmdKo(a.min)} ~ ${fmtYmdKo(a.max)}) 사이로 골라주세요.`;
+  if (a.paused && v === a.current) return '지금 재시작일과 같습니다.';
+  return null;
+}
+function renderPausePreview() {
+  const a = currentPause; if (!a) return;
+  const v = document.getElementById('pause-date').value;
+  const err = v ? pauseError(v) : null;
+  const errEl = document.getElementById('pause-error');
+  errEl.style.display = err ? 'block' : 'none';
+  errEl.textContent = err || '';
+  const pv = document.getElementById('pause-preview');
+  if (!v || !isValidYmd(v)) { pv.innerHTML = `${fmtYmdKo(a.min)} ~ ${fmtYmdKo(a.max)} 사이에서 고를 수 있어요.`; return; }
+  pv.innerHTML = `<b>${fmtYmdKo(a.base)} ~ ${fmtYmdKo(addDaysYmd(v, -1))}</b> 쉬고 (${diffDaysYmd(a.base, v)}일)<br><b>${fmtYmdKo(v)}</b> 오후 6시에 다시 결제되며 시작해요.`;
+}
+async function confirmPause() {
+  const a = currentPause; if (!a) return;
+  const v = document.getElementById('pause-date').value;
+  const err = pauseError(v);
+  if (err) { renderPausePreview(); alert(err); return; }
+  if (!a.paused && a.used + 1 > PAUSE_PER_YEAR && !confirm(`${a.name}님은 최근 12개월에 이미 ${a.used}번 쉬었어요. 그래도 쉬어가기를 할까요?`)) return;
+  const btn = document.getElementById('pause-confirm-btn');
+  btn.disabled = true;
+  const { id, name, paused } = a;
+  try {
+    const out = await api('pauseSubscriber', { id, resumeDate: v }).catch(e => ({ error: e.message }));
+    if (out.success) {
+      closePauseModal();
+      loadSubscribers();
+      alert(paused ? `${name}님 재시작일이 ${fmtYmdKo(v)}로 바뀌었어요.` : `${name}님 쉬어가기 시작. ${fmtYmdKo(v)}에 다시 시작해요.\n브로제이 출입을 쉬는 기간 동안 막아주세요.`);
+    } else {
+      btn.disabled = false;
+      alert('오류: ' + (out.error || '다시 시도해주세요'));
+    }
+  } catch (e) {
+    btn.disabled = false;
+    alert('오류가 발생했습니다. 다시 시도해주세요.');
+  }
+}
+// 재시작 3일 전 안내 문자
+async function copyResumeMessage(id) {
+  const s = subscribers.find(x => String(x.id) === String(id));
+  if (!s) return;
+  const d = String(s.next_billing_date).slice(0, 10);
+  const [, m, dd] = d.split('-').map(Number);
+  const msg = `[990짐] ${s.name}님, 쉬어가기가 끝나고 ${m}월 ${dd}일부터 다시 시작돼요.\n그날 등록된 카드로 월 ${expectedAmount(s).toLocaleString()}원이 결제돼요.\n더 쉬고 싶으시거나 그만두시려면 그 전에 센터로 연락 주세요. (02-371-2684)`;
+  try {
+    await navigator.clipboard.writeText(msg);
+    alert('문자 내용이 복사됐어요. 카톡이나 문자에 붙여넣어 보내주세요.\n\n' + msg);
+  } catch (e) {
+    prompt('아래 내용을 복사해서 보내주세요.', msg);
+  }
+  try { await api('updateSubscriber', { id, fields: { resume_msg_sent: true } }); } catch (e) {}
+  loadSubscribers();
 }
 
 function openBillingModal(id) {

@@ -225,13 +225,16 @@ function showMypage(sub) {
   document.getElementById('mypage-screen').style.display = 'block';
 
   document.getElementById('my-name').textContent = sub.name + '님';
-  document.getElementById('my-plan').textContent = sub.status === 'active' ? sub.plan + ' 구독 중' : sub.plan + ' (해지됨)';
+  document.getElementById('my-plan').textContent = sub.status === 'active' ? sub.plan + ' 구독 중' : sub.status === 'paused' ? sub.plan + ' 쉬는 중' : sub.plan + ' (해지됨)';
   document.getElementById('my-plan-name').textContent = sub.plan;
 
   const statusEl = document.getElementById('my-status');
   if (sub.status === 'active') {
     statusEl.innerHTML = '<span class="badge badge-active">구독 중</span>';
     document.getElementById('my-next').textContent = sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString('ko-KR') : '-';
+  } else if (sub.status === 'paused') {
+    statusEl.innerHTML = '<span class="badge badge-active" style="background:#e0e7ff;color:#4338ca">쉬는 중</span>';
+    document.getElementById('my-next').textContent = sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString('ko-KR') + ' 다시 시작' : '-';
   } else {
     statusEl.innerHTML = '<span class="badge badge-cancelled">해지됨</span>';
     document.getElementById('my-next').textContent = '-';
