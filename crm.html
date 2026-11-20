@@ -288,19 +288,19 @@
         </div>
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
           <h3 class="text-base font-extrabold">비용과 목표 매출</h3>
-          <p class="text-xs text-slate-500 mt-1">목표 매출 = 고정비 + PT 강사비 + 남기고 싶은 순이익. 매달 이 숫자로 자동 계산돼요.</p>
+          <p class="text-xs text-slate-500 mt-1">목표 매출 = 고정비(트레이너 빼고) + PT 강사비 + 남기고 싶은 순이익. 매달 이 숫자로 자동 계산돼요.</p>
           <div id="cost-rows" class="mt-4 space-y-2"></div>
           <button id="cost-add" class="mt-2 text-xs font-bold text-blue-600 hover:underline">+ 비용 항목 추가</button>
           <div class="mt-4 pt-4 border-t border-slate-100 space-y-2 text-sm tabular-nums">
-            <div class="flex justify-between"><span class="text-slate-600">고정비 합계</span><b id="f-floor"></b></div>
-            <div class="flex justify-between"><span class="text-slate-600">PT 강사비 <span id="f-pt-from" class="text-xs text-slate-400"></span></span><b id="f-pt"></b></div>
+            <div class="flex justify-between"><span class="text-slate-600">고정비 합계 <span class="text-xs text-slate-400">(트레이너 비용 빼고)</span></span><b id="f-floor"></b></div>
+            <div class="flex items-center justify-between gap-2"><label for="f-ptpay" class="text-slate-600">PT 강사비 <span class="text-xs text-slate-400">(트레이너·매니저)</span><br><span id="f-pt-from" class="text-[11px] text-slate-400"></span></label><span class="flex items-center gap-1"><input id="f-ptpay" inputmode="numeric" class="w-28 text-right px-2 py-1.5 rounded-lg border border-slate-300 font-bold focus:border-blue-600 outline-none">원</span></div>
             <div class="flex justify-between"><span class="text-slate-600">손익분기 매출</span><b id="f-bep"></b></div>
             <div class="flex items-center justify-between gap-2"><label for="f-profit" class="text-slate-600">남기고 싶은 순이익</label><span class="flex items-center gap-1"><input id="f-profit" inputmode="numeric" class="w-28 text-right px-2 py-1.5 rounded-lg border border-slate-300 font-bold focus:border-blue-600 outline-none">원</span></div>
             <div class="flex justify-between text-base pt-2 border-t border-slate-100"><span class="font-extrabold">목표 매출</span><b id="f-target" class="text-blue-600 font-extrabold"></b></div>
           </div>
           <p id="fin-err" class="hidden mt-2 text-sm font-bold text-rose-600"></p>
           <button id="fin-save" class="mt-4 w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold">저장</button>
-          <p class="mt-2 text-[11px] text-slate-500 leading-relaxed">처음 숫자는 센터 손익표 최근 3개월(8~10월) 평균이에요. 관리비처럼 달마다 바뀌는 건 여기서 고치면 바로 반영돼요. PT 강사비는 손익표 최근 3개월 평균으로 자동 계산돼요.</p>
+          <p class="mt-2 text-[11px] text-slate-500 leading-relaxed">처음 숫자는 센터 손익표 최근 3개월(8~10월) 평균이에요. 관리비처럼 달마다 바뀌는 건 여기서 고치면 바로 반영돼요. PT 강사비는 비워두면 손익표 최근 3개월 평균을 쓰고, 매니저가 빠지는 것처럼 바뀌면 직접 적어주세요.</p>
         </div>
       </div>
     </section>
@@ -513,7 +513,7 @@ function renderDash() {
     ['체험·신규', s['체험·신규'], '등록 4주 안', '#2B5FC7'],
     ['정착', s['정착'], '잘 나오는 정규 회원', '#1A2744'],
     ['미출석', s['미출석'], '2주 넘게 안 오심', '#F4A5A7'],
-    ['만료 예정', s['만료 예정'], '14일 안에 끝남', '#E5484D'],
+    ['만료 예정', s['만료 예정'], `14일 안 · 구독 해지 ${t.subCancel}${t.subFail ? ` · 결제 실패 ${t.subFail}` : ''}`, '#E5484D'],
     ['만료·이탈', t.lapsedThisMonth, '이번 달 만료', '#C7CED9'],
   ];
   const sum = FLOW.reduce((a, f) => a + f[1], 0) || 1;
@@ -744,12 +744,14 @@ $('staff-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('s
 const num = (v) => Math.max(0, Math.round(Number(String(v).replace(/[^\d]/g, '')) || 0));
 function finCalc() {
   const floor = FIN.costs.reduce((a, c) => a + c.amount, 0), profit = num($('f-profit').value);
-  $('f-floor').textContent = won(floor); $('f-pt').textContent = won(FIN.ptPay); $('f-pt-from').textContent = FIN.ptFrom ? `(손익표 ${FIN.ptFrom.replace(/-/g, '.').replace(/(\d{4})\./g, '').replace('~', '~')} 평균)` : '';
-  $('f-bep').textContent = won(floor + FIN.ptPay); $('f-target').textContent = won(floor + FIN.ptPay + profit);
+  const ptv = $('f-ptpay').value.trim(), pt = ptv === '' ? FIN.ptAvg : num(ptv);
+  $('f-floor').textContent = won(floor);
+  $('f-pt-from').textContent = `비우면 손익표 ${FIN.ptFrom ? FIN.ptFrom.replace(/\d{4}-/g, '').replace('~', '~') + '월' : ''} 평균 ${won(FIN.ptAvg)}`;
+  $('f-bep').textContent = won(floor + pt); $('f-target').textContent = won(floor + pt + profit);
 }
 function renderFin() {
   $('cost-rows').innerHTML = FIN.costs.map((c, i) => `<div class="flex items-center gap-2"><input data-i="${i}" data-k="name" value="${esc(c.name)}" class="cin flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-600 outline-none"><input data-i="${i}" data-k="amount" value="${fmt(c.amount)}" inputmode="numeric" class="cin w-28 text-right px-2 py-2 rounded-lg border border-slate-200 text-sm font-bold tabular-nums focus:border-blue-600 outline-none"><button data-i="${i}" class="crm-x p-1.5 rounded-lg text-slate-400 hover:text-rose-600" title="빼기"><i data-lucide="x" class="w-4 h-4"></i></button></div>${c.note ? `<div class="-mt-1 pl-1 text-[11px] text-slate-400">${esc(c.note)}</div>` : ''}`).join('');
-  $('f-profit').value = fmt(FIN.profit);
+  $('f-profit').value = fmt(FIN.profit); $('f-ptpay').value = FIN.ptManual != null ? fmt(FIN.ptManual) : ''; $('f-ptpay').placeholder = fmt(FIN.ptAvg);
   document.querySelectorAll('.cin').forEach((el) => el.oninput = () => { const c = FIN.costs[el.dataset.i]; if (el.dataset.k === 'amount') { c.amount = num(el.value); } else c.name = el.value; finCalc(); });
   document.querySelectorAll('.cin[data-k="amount"]').forEach((el) => el.onblur = () => { el.value = fmt(num(el.value)); });
   document.querySelectorAll('.crm-x').forEach((b) => b.onclick = () => { FIN.costs.splice(+b.dataset.i, 1); renderFin(); });
@@ -757,19 +759,22 @@ function renderFin() {
 }
 $('cost-add').addEventListener('click', () => { FIN.costs.push({ name: '', amount: 0 }); renderFin(); const ins = document.querySelectorAll('.cin[data-k="name"]'); ins[ins.length - 1].focus(); });
 $('f-profit').addEventListener('input', finCalc);
+$('f-ptpay').addEventListener('input', finCalc);
+$('f-ptpay').addEventListener('blur', () => { const v = $('f-ptpay').value.trim(); $('f-ptpay').value = v === '' ? '' : fmt(num(v)); });
 $('f-profit').addEventListener('blur', () => { $('f-profit').value = fmt(num($('f-profit').value)); });
 $('fin-save').addEventListener('click', async () => {
   const err = $('fin-err'); err.classList.add('hidden');
   try {
-    const r = await crm('financeSave', { costs: FIN.costs.filter((c) => c.name.trim()), profit: num($('f-profit').value) });
+    const ptv = $('f-ptpay').value.trim();
+    const r = await crm('financeSave', { costs: FIN.costs.filter((c) => c.name.trim()), profit: num($('f-profit').value), ptPay: ptv === '' ? null : num(ptv) });
     FIN = r.finance; renderFin(); toast('저장했어요. 목표 매출이 바로 바뀌어요');
-    if (D) { D.sales.target = FIN.target; D.sales.floor = FIN.floor; D.sales.profit = FIN.profit; D.sales.breakeven = FIN.breakeven; renderDash(); }
+    if (D) { D.sales.target = FIN.target; D.sales.floor = FIN.floor; D.sales.profit = FIN.profit; D.sales.ptPay = FIN.ptPay; D.sales.breakeven = FIN.breakeven; renderDash(); }
     salesLoaded = false;
   } catch (e) { err.textContent = e.message; err.classList.remove('hidden'); }
 });
 
 // ── 회원 목록 ──
-const CHIPS = [['', '유효 회원'], ['체험·신규', '체험·신규'], ['정착', '정착'], ['미출석', '2주 미출석'], ['만료 예정', '만료 예정'], ['홀딩', '홀딩'], ['만료·이탈', '만료·이탈']];
+const CHIPS = [['', '유효 회원'], ['월구독', '월구독'], ['체험·신규', '체험·신규'], ['정착', '정착'], ['미출석', '2주 미출석'], ['만료 예정', '만료 예정'], ['홀딩', '홀딩'], ['만료·이탈', '만료·이탈']];
 let listState = { stage: '', q: '', offset: 0 }, listLoaded = false, selected = null;
 function openList(stage) { listState = { stage: stage || '', q: '', offset: 0 }; $('gsearch').value = ''; go('members'); loadList(); }
 function renderChips() {
@@ -777,6 +782,9 @@ function renderChips() {
   document.querySelectorAll('.chipb').forEach((b) => b.addEventListener('click', () => { listState = { stage: b.dataset.k, q: '', offset: 0 }; $('gsearch').value = ''; loadList(); }));
 }
 function remText(m) {
+  if (m.sub === '구독 중' || m.sub === '쉬어가기') return `<span class="font-extrabold text-blue-600">월구독</span><span class="text-xs text-slate-500"> · ${m.next_billing ? md(m.next_billing) + ' 결제' : ''}</span>`;
+  if (m.sub === '해지 신청' && m.stage !== '만료·이탈') return `<span class="font-extrabold text-rose-600">해지 신청 · ${m.days_left}일 남음</span>`;
+  if (m.sub === '결제 실패' && m.stage !== '만료·이탈') return '<span class="font-extrabold text-rose-600">결제 실패</span>';
   if (m.stage === '만료·이탈') return m.ends_on ? `<span class="text-slate-500 font-bold">${ymd(m.ends_on)} 만료</span>` : '-';
   if (m.days_left == null) return '-';
   const hot = m.days_left <= 14;
@@ -848,6 +856,7 @@ function renderDetail(r) {
   const T = { blue: ['bg-blue-50 border-blue-200', 'text-blue-700', 'text-blue-600', 'bg-blue-600'], red: ['bg-rose-50 border-rose-200', 'text-rose-700', 'text-rose-600', 'bg-rose-500'], slate: ['bg-slate-100 border-slate-200', 'text-slate-600', 'text-slate-700', 'bg-slate-400'] }[tone];
   let hero;
   if (expired) hero = { label: '만료 후', big: m.ends_on ? Math.max(0, -m.days_left) : '-', unit: '일 지남', pct: 100, s: main?.starts_on, e: m.ends_on };
+  else if (m.sub === '구독 중' || m.sub === '쉬어가기') hero = { label: m.sub === '쉬어가기' ? '월구독 · 쉬어가는 중' : '월구독 · 자동결제 중', big: m.next_billing ? md(m.next_billing) : '-', unit: '다음 결제', pct: null };
   else if (m.days_left != null) {
     const len = main ? spanDays(main.starts_on, main.ends_on) : null;
     hero = { label: m.holding ? '홀딩 중 · 남은 기간' : '남은 기간', big: m.days_left === 0 ? '오늘' : m.days_left, unit: m.days_left === 0 ? '만료' : '일 남음', pct: len ? Math.min(100, Math.max(2, Math.round((1 - m.days_left / len) * 100))) : null, s: main?.starts_on, e: m.ends_on };
