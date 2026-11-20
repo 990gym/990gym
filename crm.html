@@ -1163,7 +1163,7 @@ function renderPT() {
   const nt = $('pt-note');
   const NO = P.source === 'notion';
   renderSync('pt-sync', P.sync);
-  if (NO) { if (P.unmatched) { nt.classList.remove('hidden'); nt.innerHTML = `<b class="text-blue-700">노션 PT회원관리 기준이에요.</b> 노션에는 연락처가 없어서 이름으로 회원을 찾아요. <b>${P.unmatched}명</b>은 같은 이름이 없거나 여러 명이라 회원 화면과 연결이 안 됐어요(목록에 '연결 확인' 표시). 노션 이름을 CRM 회원 이름과 똑같이 맞추면 다음 연동 때 연결돼요.`; } else nt.classList.add('hidden'); }
+  if (NO) { const parts = []; if (P.unmatched) parts.push(`노션에는 연락처가 없어서 이름으로 회원을 찾아요. <b>${P.unmatched}명</b>은 같은 이름이 없거나 여러 명이라 회원 화면과 연결이 안 됐어요(목록에 '연결 확인' 표시). 노션 이름을 CRM 회원 이름과 똑같이 맞추면 다음 연동 때 연결돼요.`); if (P.stale) parts.push(`노션에서 90일 넘게 안 바뀐 <b>${P.stale}명</b>은 끝난 걸로 보고 뺐어요.`); if (parts.length) { nt.classList.remove('hidden'); nt.innerHTML = `<b class="text-blue-700">노션 PT회원관리 기준이에요.</b> ${parts.join(' ')}`; } else nt.classList.add('hidden'); }
   else if (noTrainer || untouched > P.rows.length / 2) { nt.classList.remove('hidden'); nt.innerHTML = `<b class="text-blue-700">브로제이에는 PT 수업 횟수와 담당이 거의 안 남아 있었어요.</b> ${untouched}건은 남은 횟수가 처음 그대로이고, ${noTrainer}건은 담당 트레이너가 비어 있어요. 아래 목록에서 <b>담당 지정</b>과 <b>남은 횟수 맞추기</b>를 한 번씩 해두면, 그 다음부터 <b>수업 체크</b>로 소진이 자동으로 쌓여요.`; } else nt.classList.add('hidden');
   const won0 = (n) => `${fmt(n)}원`;
   const kpi = (title, sub, a, b, money, label, cls, hl) => `<div class="rounded-2xl border p-5 shadow-card ${cls}">
