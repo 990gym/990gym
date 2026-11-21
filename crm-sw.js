@@ -5,7 +5,7 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: '990crm', body: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.title || '990crm', {
-    body: d.body || '', tag: d.tag || undefined, icon: '/crm-icon-192.png?v=4', badge: '/crm-icon-192.png?v=4', data: { url: d.url || '/crm.html' },
+    body: d.body || '', tag: d.tag || undefined, icon: '/crm-icon-192.png?v=5', badge: '/crm-icon-192.png?v=5', data: { url: d.url || '/crm.html' },
   }));
 });
 self.addEventListener('notificationclick', (e) => {
