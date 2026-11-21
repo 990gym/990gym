@@ -666,7 +666,22 @@ async function call(path, body) {
   if (!res.ok) throw new Error(data.error || `오류 (${res.status})`);
   return data;
 }
-const crm = (action, params = {}) => call('crm', { action, ...params });
+// 미리 받아두기: 화면을 누르기 전에 뒤에서 받아 두고, 누르면 바로 쓴다 (90초 안에만)
+const READS = ['dashboard', 'members', 'member', 'revenue', 'salesYear', 'reportV2', 'report', 'inquiryList', 'ptBoard', 'lockerBoard', 'msgRules', 'staffList', 'financeGet', 'attendanceDay', 'subSearch'];
+const PRE = new Map();
+const preKey = (a, p) => a + JSON.stringify(Object.keys(p).sort().filter((k) => p[k] != null && p[k] !== '').map((k) => [k, p[k]]));
+function prefetch(action, params = {}) {
+  const k = preKey(action, params), hit = PRE.get(k);
+  if (hit && Date.now() - hit.at < 90000) return hit.p;
+  const p = call('crm', { action, ...params }); PRE.set(k, { at: Date.now(), p }); p.catch(() => PRE.delete(k));
+  return p;
+}
+const crm = (action, params = {}) => {
+  if (!READS.includes(action)) { PRE.clear(); return call('crm', { action, ...params }); } // 바꾸는 요청이면 미리 받은 건 버린다
+  const k = preKey(action, params), hit = PRE.get(k);
+  if (hit && Date.now() - hit.at < 90000) { PRE.delete(k); return hit.p; }
+  return call('crm', { action, ...params });
+};
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2600); }
 
 // ── 로그인 ──
@@ -1623,7 +1638,7 @@ async function loadList(append = false) {
       </button>`; }).join('') || '<p class="p-6 text-center text-sm text-slate-500">조건에 맞는 회원이 없어요</p>';
     $('list-count').textContent = `${fmt(r.total)}명`;
     $('more').classList.toggle('hidden', listRows.length >= r.total);
-    document.querySelectorAll('.row-m').forEach((b) => b.onclick = () => openMember(b.dataset.id, true));
+    document.querySelectorAll('.row-m').forEach((b) => { b.onclick = () => openMember(b.dataset.id, true); b.onmouseenter = () => { clearTimeout(b._pf); b._pf = setTimeout(() => prefetch('member', { id: b.dataset.id }).catch(() => {}), 150); }; b.onmouseleave = () => clearTimeout(b._pf); });
     if (!append && !selected && listRows[0] && window.innerWidth >= 1024) openMember(listRows[0].id, true);
     icons();
   } catch (e) { $('list').innerHTML = `<p class="p-6 text-center text-sm text-rose-600 font-bold">${esc(e.message)}</p>`; $('mtable').innerHTML = `<tr><td colspan="7" class="p-6 text-center text-sm text-rose-600 font-bold">${esc(e.message)}</td></tr>`; }
@@ -1947,7 +1962,21 @@ async function start() {
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   go('dash'); icons();
   try { await loadDash(); } catch (e) { toast(e.message); }
+  await warmTabs();
   autoNotionSync();
+}
+// 대시보드가 뜬 다음, 다른 탭 내용을 하나씩 뒤에서 받아 둔다 → 탭을 누르면 바로 뜬다
+async function warmTabs() {
+  await new Promise((r) => setTimeout(r, 800));
+  const jobs = [
+    () => !listLoaded && prefetch('members', { stage: listState.stage, q: listState.q, offset: listState.offset, limit: 60, sort: listSort.key, dir: listSort.dir }),
+    () => !salesLoaded && prefetch('revenue', { period: rvPeriod }),
+    () => !inqLoaded && prefetch('inquiryList', {}),
+    () => !ptLoaded && prefetch('ptBoard', { period: ptPeriod }),
+    () => !rpLoaded && prefetch('reportV2', { ym: rpYm, week: rpWeek }),
+    () => !lockersLoaded && prefetch('lockerBoard'),
+  ];
+  for (const j of jobs) { try { await j(); } catch (e) { /* 조용히 */ } }
 }
 $('login-btn').addEventListener('click', login);
 $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
