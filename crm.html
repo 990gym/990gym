@@ -1856,6 +1856,8 @@ $('att-modal').addEventListener('click', (e) => { if (e.target.id === 'att-modal
 $('at-prev').onclick = () => { atTab = 'all'; openAttendance(addDays(atDate, -1)); };
 $('at-next').onclick = () => { if (AT && AT.date < AT.today) { openAttendance(addDays(atDate, 1)); } };
 $('k-gym').addEventListener('click', () => { atTab = 'all'; openAttendance(addDaysISO(0)); });
+// 앱이 이미 열려 있을 때 출석 알림을 누르면 출석부를 띄운다
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'att' && !$('app').classList.contains('hidden')) { atTab = 'all'; openAttendance(addDaysISO(0)); } });
 
 // ── 이용권 수정 ──
 let PE = null;
@@ -1999,6 +2001,7 @@ async function start() {
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   const h = location.hash.slice(1);
   go(TITLES[h] ? h : 'dash'); icons();
+  if (h === 'att') { atTab = 'all'; openAttendance(addDaysISO(0)); } // 출석 알림을 눌러서 열었으면 출석부부터
   try { await loadDash(); } catch (e) { toast(e.message); }
   pushState();
   autoNotionSync();
