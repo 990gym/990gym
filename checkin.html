@@ -181,7 +181,7 @@ function done(r, justSaved) {
   if (r.blocked) body = `<div class="mt-5 text-3xl font-extrabold">${esc(r.name)}님</div><div class="mt-3 text-xl font-bold text-rose-600">${esc(r.reason)}</div>`;
   else {
     const left = r.sub === '구독 중' || r.sub === '쉬어가기' ? `<span class="text-blue-600">월구독</span>${r.next_billing ? ` <span class="text-sm text-slate-500">${+r.next_billing.slice(5, 7)}.${+r.next_billing.slice(8)} 결제</span>` : ''}` : r.days_left == null ? '' : r.days_left <= 0 ? '<span class="text-rose-600">오늘까지예요</span>' : `<span class="${r.days_left <= 14 ? 'text-rose-600' : 'text-blue-600'}">${r.days_left}일</span> 남았어요`;
-    body = `<div class="mt-5 text-3xl font-extrabold">${esc(r.name)}님, ${r.again ? '이미 입실하셨어요' : '환영해요!'}</div>
+    body = `<div class="mt-5 text-3xl font-extrabold">${esc(r.name)}님, ${r.dup ? '이미 입실하셨어요' : r.again ? '다시 오셨네요!' : '환영해요!'}</div>
       ${justSaved ? '<div class="mt-2 text-base font-bold text-blue-600">사진이 저장됐어요</div>' : ''}
       <div class="mt-5 grid ${r.pt_total ? 'grid-cols-3' : 'grid-cols-2'} gap-3 tabular-nums">
         <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3"><div class="text-sm font-bold text-slate-500">남은 기간</div><div class="mt-1 text-xl font-extrabold">${left || '-'}</div></div>
