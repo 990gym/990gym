@@ -711,6 +711,7 @@ const TITLES = { dash: '대시보드', members: '회원', inquiry: '문의 등�
 let current = 'dash';
 function go(tab) {
   current = tab;
+  try { history.replaceState(null, '', tab === 'dash' ? location.pathname : `#${tab}`); } catch (e) {} // 새로고침해도 이 화면 그대로
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('hidden', s.id !== `tab-${tab}`));
   document.querySelectorAll('.nav').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('bg-white', on); b.classList.toggle('text-purple-900', on); b.classList.toggle('text-blue-100', !on); b.classList.toggle('hover:bg-white/10', !on); });
   const sb = $('side-todo'); if (sb) { sb.classList.toggle('bg-blue-600', tab === 'dash'); sb.classList.toggle('text-white', tab === 'dash'); sb.classList.toggle('bg-white/15', tab !== 'dash'); }
@@ -1960,7 +1961,8 @@ function renderLockers() {
 // ── 시작 ──
 async function start() {
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
-  go('dash'); icons();
+  const h = location.hash.slice(1);
+  go(TITLES[h] ? h : 'dash'); icons();
   try { await loadDash(); } catch (e) { toast(e.message); }
   autoNotionSync();
 }
