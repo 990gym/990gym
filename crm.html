@@ -613,7 +613,7 @@
         <div><label class="block text-xs font-bold text-slate-700 mb-1">남은 횟수</label><input id="pm-left" inputmode="numeric" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 tabular-nums focus:border-blue-600 outline-none"></div>
       </div>
       <div><label class="block text-xs font-bold text-slate-700 mb-1">결제 금액 (원)</label><input id="pm-price" inputmode="numeric" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 tabular-nums focus:border-blue-600 outline-none"></div>
-      <div id="pm-method-wrap"><span class="block text-xs font-bold text-slate-700 mb-1">결제 방법</span><div id="pm-method" class="flex gap-1.5"></div></div>
+      <div id="pm-method-wrap"><span class="block text-xs font-bold text-slate-700 mb-1">결제 방법</span><div id="pm-method" class="flex gap-1.5"></div><p id="pm-method-detail" class="hidden mt-1.5 text-xs font-bold text-slate-500"></p></div>
       <div><label class="block text-xs font-bold text-slate-700 mb-1">수정한 사람</label><select id="pm-staff" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white"></select></div>
       <p id="pm-err" class="hidden text-sm font-bold text-rose-600"></p>
       <button id="pm-save" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold">저장</button>
@@ -651,6 +651,8 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => Number(n || 0).toLocaleString('ko-KR');
 const md = (d) => d ? `${+d.slice(5, 7)}.${+d.slice(8, 10)}` : '-';
+// 결제 방법 설명: 나눠 낸 결제는 '카드 30만 · 현금 10만', 네이버페이 같은 건 메모로
+const payDetail = (x) => { if (!x) return ''; const sp = x.split || x.method_split; const parts = sp && typeof sp === 'object' && Object.keys(sp).length > 1 ? Object.entries(sp).map(([k, v]) => `${k} ${fmt(v)}원`) : []; const note = x.note || x.method_note; return parts.concat(note ? [note] : []).join(' · '); };
 const ymd = (d) => d ? d.replace(/-/g, '.') : '-';
 const icons = () => window.lucide && lucide.createIcons();
 if (window.Chart) { Chart.defaults.font.family = 'Pretendard, -apple-system, system-ui, sans-serif'; Chart.defaults.color = '#55606F'; }
@@ -1019,14 +1021,14 @@ async function loadRevenue() {
       card('미수 · 결제 실패', `${fmt(r.unpaid.amount)}원`, `월구독 ${r.unpaid.count}건 · 오늘 할 일에 올라가 있어요`, r.unpaid.count ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200', r.unpaid.count ? 'text-rose-600' : '');
     $('rv-list-title').textContent = r.listIsToday ? '오늘 들어온 결제' : '최근 들어온 결제 (오늘은 아직 없어요)';
     $('rv-list-sum').textContent = r.listIsToday ? `${fmt(r.list.reduce((a, x) => a + x.amount, 0))}원` : '';
-    $('rv-list').innerHTML = r.list.map((x) => `<div class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50"><span class="text-xs font-bold text-slate-500 w-12 shrink-0">${md(String(x.at).slice(0, 10))}</span><button data-id="${x.member_id}" class="rvl font-extrabold w-20 truncate text-left hover:text-blue-600">${esc(x.name)}</button><span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded ${x.kind === '재등록' ? 'bg-purple-900 text-white' : 'bg-blue-600 text-white'}">${esc(x.kind || '')}</span><span class="text-[13px] text-slate-600 flex-1 truncate">${esc(x.product)}</span>${x.group === '월구독' ? '<span class="text-[11px] font-bold text-slate-400 w-20 text-center">자동결제</span>' : `<select data-id="${x.id}" class="rvm w-20 px-1.5 py-1 rounded-lg border text-xs font-bold bg-white ${x.method ? 'border-slate-200' : 'border-rose-300 text-rose-600'}"><option value="">방법?</option>${['카드', '현금', '계좌이체'].map((k) => `<option ${x.method === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`}<span class="font-extrabold shrink-0 w-24 text-right">${fmt(x.amount)}원</span></div>`).join('') || '<p class="p-6 text-center text-sm text-slate-500">결제가 없어요</p>';
+    $('rv-list').innerHTML = r.list.map((x) => `<div class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50"><span class="text-xs font-bold text-slate-500 w-12 shrink-0">${md(String(x.at).slice(0, 10))}</span><button data-id="${x.member_id}" class="rvl font-extrabold w-20 truncate text-left hover:text-blue-600">${esc(x.name)}</button><span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded ${x.kind === '재등록' ? 'bg-purple-900 text-white' : 'bg-blue-600 text-white'}">${esc(x.kind || '')}</span><span class="text-[13px] text-slate-600 flex-1 truncate">${esc(x.product)}${payDetail(x) ? `<span class="block text-[11px] font-bold text-slate-400 truncate">${esc(payDetail(x))}</span>` : ''}</span>${x.group === '월구독' ? '<span class="text-[11px] font-bold text-slate-400 w-24 text-center">자동결제</span>' : `<select data-id="${x.id}" class="rvm w-24 px-1.5 py-1 rounded-lg border text-xs font-bold bg-white ${x.method ? 'border-slate-200' : 'border-rose-300 text-rose-600'}"><option value="">방법?</option>${x.method && !['카드', '현금', '계좌이체'].includes(x.method) ? `<option selected disabled>${esc(x.method)}</option>` : ''}${['카드', '현금', '계좌이체'].map((k) => `<option ${x.method === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`}<span class="font-extrabold shrink-0 w-24 text-right">${fmt(x.amount)}원</span></div>`).join('') || '<p class="p-6 text-center text-sm text-slate-500">결제가 없어요</p>';
     document.querySelectorAll('.rvl').forEach((b) => b.onclick = () => openMember(b.dataset.id));
     document.querySelectorAll('.rvm').forEach((el) => el.onchange = async () => { try { await crm('paymentMethod', { id: el.dataset.id, method: el.value }); el.classList.toggle('border-rose-300', !el.value); el.classList.toggle('text-rose-600', !el.value); toast(el.value ? `'${el.value}'로 남겼어요` : '결제 방법을 지웠어요'); loadRevenue(); } catch (e) { toast(e.message); } });
     const MC = { 카드: '#2B5FC7', 현금: '#1A2744', 계좌이체: '#8FAEEE', 미입력: '#C7CED9' };
     const mt = Object.values(r.methods || {}).reduce((a, x) => a + x.amount, 0) || 1;
     $('rv-methods').innerHTML = Object.entries(r.methods || {}).map(([k, v]) => `<div><div class="flex items-baseline justify-between text-sm"><span class="flex items-center gap-1.5 ${k === '미입력' ? 'text-slate-500' : 'font-bold text-slate-800'}"><span class="w-2.5 h-2.5 rounded-full" style="background:${MC[k]}"></span>${k}</span><span><strong>${fmt(v.amount)}원</strong><span class="text-xs text-slate-400 ml-1">${v.count}건</span></span></div><div class="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(v.amount / mt * 100)}%;background:${MC[k]}"></div></div></div>`).join('');
     const miss = (r.methods && r.methods.미입력) || { count: 0 };
-    $('rv-methods-note').textContent = miss.count ? `브로제이 기록에는 결제 방법이 없어서 ${miss.count}건이 '미입력'이에요. 결제 목록이나 회원 이용권 '수정'에서 고를 수 있어요.` : '모든 결제에 방법이 들어가 있어요.';
+    $('rv-methods-note').textContent = miss.count ? `${miss.count}건은 브로제이에서도 결제 방법을 못 찾아 '미입력'이에요. 결제 목록이나 회원 이용권 '수정'에서 고를 수 있어요.` : '모든 결제에 방법이 들어가 있어요.';
     const tot = r.total || 1;
     chartOf('rv-mix', { type: 'doughnut', data: { labels: RV_G.map((x) => x[1]), datasets: [{ data: RV_G.map((x) => r.groups[x[0]]), backgroundColor: RV_G.map((x) => x[2]), borderColor: '#fff', borderWidth: 2 }] }, options: { cutout: '64%', maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label} ${fmt(c.raw)}원` } } } } });
     $('rv-mix-legend').innerHTML = RV_G.map(([k, l, c]) => `<div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${c}"></span><span class="text-slate-600 flex-1">${l}</span><strong>${fmt(r.groups[k])}</strong><span class="text-xs text-slate-400 w-12 text-right">${(r.groups[k] / tot * 100).toFixed(1)}%</span></div>`).join('');
@@ -1702,7 +1704,7 @@ function renderDetail(r) {
   const total = r.payments.reduce((a, p) => a + p.amount, 0);
   const first = paidPasses[0]?.starts_on;
   const hist = paidPasses.slice().reverse();
-  const methodOf = {}; r.payments.forEach((x) => { if (x.pass_id && x.method) methodOf[x.pass_id] = x.method; });
+  const methodOf = {}; r.payments.forEach((x) => { if (x.pass_id && x.method) { const d = payDetail(x); methodOf[x.pass_id] = d && !(x.method_split && Object.keys(x.method_split).length > 1) ? `${x.method} · ${d}` : (d || x.method); } });
   const shown = histOpen ? hist : hist.slice(0, 5);
   const tiles = [
     ['이번 달 출석', r.monthVisits != null ? `${r.monthVisits}회` : '-', r.monthVisits ? 'text-slate-900' : 'text-slate-400'],
@@ -1841,7 +1843,7 @@ const addMonths = (iso, n) => { const d = new Date(Date.parse(iso)); d.setUTCMon
 function openPassEdit(r, pid) {
   const p = r.passes.find((x) => x.id === pid); if (!p) return;
   const pay = r.payments.find((x) => x.pass_id === pid);
-  PE = { r, p, status: p.status, method: (pay && pay.method) || '' };
+  PE = { r, p, status: p.status, method: (pay && pay.method) || '', method0: (pay && pay.method) || '', detail: payDetail(pay) };
   $('pm-sub').textContent = `${r.member.name} · ${p.product_name}`;
   $('pm-name').value = p.product_name || '';
   $('pm-start').value = p.starts_on || ''; $('pm-end').value = p.ends_on || '';
@@ -1857,7 +1859,8 @@ function openPassEdit(r, pid) {
 function renderPassEdit() {
   const pill = (on) => `px-3 py-2 rounded-xl text-xs font-bold border ${on ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-700'}`;
   $('pm-status').innerHTML = ['사용 중', '예정', '홀딩', '만료', '무효'].map((x) => `<button data-v="${x}" class="pms ${pill(PE.status === x)}">${x}</button>`).join('');
-  $('pm-method').innerHTML = ['카드', '현금', '계좌이체'].map((x) => `<button data-v="${x}" class="pmm flex-1 ${pill(PE.method === x)}">${x}</button>`).join('');
+  $('pm-method').innerHTML = ['카드', '현금', '계좌이체'].map((x) => `<button data-v="${x}" class="pmm flex-1 ${pill(PE.method === x || (PE.method === PE.method0 && PE.method.split('+').includes(x)))}">${x}</button>`).join('');
+  const dt = $('pm-method-detail'); const showDt = PE.detail && PE.method === PE.method0; dt.textContent = showDt ? `브로제이 기록: ${PE.detail}` : ''; dt.classList.toggle('hidden', !showDt);
   $('pm-quick').innerHTML = [['+7일', 7], ['+14일', 14], ['+1달', 'm1'], ['+3달', 'm3']].map(([l, n]) => `<button data-n="${n}" class="pmq px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">만료일 ${l}</button>`).join('');
   document.querySelectorAll('.pms').forEach((b) => b.onclick = () => { PE.status = b.dataset.v; renderPassEdit(); });
   document.querySelectorAll('.pmm').forEach((b) => b.onclick = () => { PE.method = PE.method === b.dataset.v ? '' : b.dataset.v; renderPassEdit(); });
@@ -1870,7 +1873,7 @@ $('pm-save').onclick = async () => {
   try {
     const staff = $('pm-staff').value; if (staff) lastStaff.set(staff);
     const body = { id: PE.p.id, product_name: $('pm-name').value, status: PE.status, starts_on: $('pm-start').value, ends_on: $('pm-end').value, total_count: $('pm-total').value.replace(/\D/g, ''), remaining_count: $('pm-left').value.replace(/\D/g, ''), price_paid: $('pm-price').value.replace(/\D/g, ''), staff };
-    if (kindOf(PE.p) !== '월구독') body.method = PE.method;
+    if (kindOf(PE.p) !== '월구독' && PE.method !== PE.method0) body.method = PE.method;
     renderDetail(await crm('passUpdate', body)); $('pass-modal').classList.add('hidden'); toast('이용권을 고쳤어요'); D = null; loadDash().catch(() => {}); if (listLoaded) loadList();
   } catch (e) { err.textContent = e.message; err.classList.remove('hidden'); }
   finally { btn.disabled = false; btn.textContent = '저장'; }
