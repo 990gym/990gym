@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>990crm</title>
 <link rel="icon" href="favicon.ico">
@@ -18,6 +18,9 @@
   .rp-sel{outline:3px solid #1A2744;outline-offset:-3px}</style>
 <style>
   /* 단계 배지: 대시보드 '회원 흐름'과 같은 색 */
+  /* 폰: 옆으로 밀리지 않게 + 입력칸을 누를 때 화면이 확대되지 않게 (아이폰은 16px보다 작은 글자 칸을 누르면 확대한다) */
+  html, body { overflow-x: hidden; max-width: 100%; }
+  @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
   /* 폰: 표를 카드처럼 (옆으로 밀지 않게) — 칸 이름은 머리줄에서 가져온다 */
   @media (max-width: 639px) {
     table.rt thead { display: none; }
@@ -527,7 +530,7 @@
     <section id="tab-settings" class="tab hidden max-w-5xl mx-auto px-4 lg:px-8 pt-5 space-y-5">
       <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight">설정</h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-card lg:col-span-2">
+        <div class="min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card lg:col-span-2">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0"><h3 class="text-base font-extrabold">매일 요약 알림</h3>
               <p class="text-xs text-slate-500 mt-1">밤 10시에 오늘 매출·출석·할 일을, 월요일 아침 9시에 지난주 요약을 이 폰으로 보내요. 매출이 들어 있어서 켠 폰에만 가요.</p></div>
@@ -535,12 +538,12 @@
           </div>
           <p id="rp-state" class="mt-2 text-xs font-bold text-slate-500"></p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
+        <div class="min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
           <h3 class="text-base font-extrabold">직원 명단</h3>
           <p class="text-xs text-slate-500 mt-1">할 일을 완료할 때 여기 있는 이름 중에서 골라요. 그만둔 직원은 빼도 처리 기록은 남아요.</p>
           <div id="staff-list" class="mt-4 divide-y divide-slate-100 border-y border-slate-100"></div>
           <div class="mt-4 flex flex-wrap sm:flex-nowrap gap-2">
-            <input id="staff-name" maxlength="20" placeholder="이름" class="w-full sm:w-auto sm:flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-600 outline-none">
+            <input id="staff-name" size="1" maxlength="20" placeholder="이름" class="w-full sm:w-auto sm:flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-blue-600 outline-none">
             <select id="staff-role" class="flex-1 sm:flex-none px-3 py-2.5 rounded-xl border border-slate-300 text-sm bg-white"></select>
             <button id="staff-add" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold shrink-0">추가</button>
           </div>
@@ -552,7 +555,7 @@
             <div id="role-new" class="hidden mt-2 flex gap-2"><input id="role-name" maxlength="20" placeholder="예: 실장, 오전 인포, 강사" class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:border-blue-600 outline-none"><button id="role-ok" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold">저장</button></div>
           </div>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
+        <div class="min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
           <h3 class="text-base font-extrabold">비용과 목표 매출</h3>
           <p class="text-xs text-slate-500 mt-1">목표 매출 = 고정비(트레이너 빼고) + PT 강사비 + 남기고 싶은 순이익. 매달 이 숫자로 자동 계산돼요.</p>
           <div id="cost-rows" class="mt-4 space-y-2"></div>
@@ -1658,7 +1661,7 @@ function finCalc() {
   $('f-bep').textContent = won(floor + pt); $('f-target').textContent = won(floor + pt + profit);
 }
 function renderFin() {
-  $('cost-rows').innerHTML = FIN.costs.map((c, i) => `<div class="flex items-center gap-2"><input data-i="${i}" data-k="name" value="${esc(c.name)}" class="cin flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-600 outline-none"><input data-i="${i}" data-k="amount" value="${fmt(c.amount)}" inputmode="numeric" class="cin w-28 text-right px-2 py-2 rounded-lg border border-slate-200 text-sm font-bold tabular-nums focus:border-blue-600 outline-none"><button data-i="${i}" class="crm-x p-1.5 rounded-lg text-slate-400 hover:text-rose-600" title="빼기"><i data-lucide="x" class="w-4 h-4"></i></button></div>${c.note ? `<div class="-mt-1 pl-1 text-[11px] text-slate-400">${esc(c.note)}</div>` : ''}`).join('');
+  $('cost-rows').innerHTML = FIN.costs.map((c, i) => `<div class="flex items-center gap-2"><input data-i="${i}" data-k="name" size="1" value="${esc(c.name)}" class="cin flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-600 outline-none"><input data-i="${i}" data-k="amount" size="1" value="${fmt(c.amount)}" inputmode="numeric" class="cin w-28 text-right px-2 py-2 rounded-lg border border-slate-200 text-sm font-bold tabular-nums focus:border-blue-600 outline-none"><button data-i="${i}" class="crm-x p-1.5 rounded-lg text-slate-400 hover:text-rose-600" title="빼기"><i data-lucide="x" class="w-4 h-4"></i></button></div>${c.note ? `<div class="-mt-1 pl-1 text-[11px] text-slate-400">${esc(c.note)}</div>` : ''}`).join('');
   $('f-profit').value = fmt(FIN.profit); $('f-ptpay').value = FIN.ptManual != null ? fmt(FIN.ptManual) : ''; $('f-ptpay').placeholder = fmt(FIN.ptAvg);
   document.querySelectorAll('.cin').forEach((el) => el.oninput = () => { const c = FIN.costs[el.dataset.i]; if (el.dataset.k === 'amount') { c.amount = num(el.value); } else c.name = el.value; finCalc(); });
   document.querySelectorAll('.cin[data-k="amount"]').forEach((el) => el.onblur = () => { el.value = fmt(num(el.value)); });
