@@ -1006,6 +1006,7 @@ function renderTodos() {
   }).join('');
   box.querySelectorAll('.tname').forEach((b) => b.onclick = () => (b.dataset.inq ? go('inquiry') : openMember(b.dataset.id)));
   box.querySelectorAll('.tdo').forEach((b) => b.onclick = () => openDone(b.dataset.key));
+  box.querySelectorAll('.tlock').forEach((b) => b.onclick = () => openMember(b.dataset.id));
   box.querySelectorAll('.tundo').forEach((b) => b.onclick = () => undoTask(b.dataset.key));
   box.querySelectorAll('.tmore').forEach((b) => b.onclick = () => { todoExpand[b.dataset.g] = !todoExpand[b.dataset.g]; renderTodos(); icons(); });
 }
@@ -1029,6 +1030,7 @@ function todoCard(x, g, hot) {
     <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
       ${x.done
         ? `<button data-key="${x.key}" class="tundo flex-1 sm:flex-none justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5" title="누르면 되돌려요"><i data-lucide="check" class="w-3.5 h-3.5"></i>완료 · ${esc(x.done_by)} ${time}</button>`
+        : x.kind === '락커' ? `<button data-id="${x.member_id}" class="tlock flex-1 sm:flex-none justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-blue-600 text-white flex items-center gap-1.5"><i data-lucide="key-round" class="w-3.5 h-3.5"></i>${esc(x.action)}</button>`
         : `<button data-key="${x.key}" class="tdo flex-1 sm:flex-none justify-center px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-blue-600 text-white flex items-center gap-1.5"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>${esc(x.action)}</button>`}
       ${x.phone ? `<a href="tel:${esc(x.phone)}" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600" title="전화 걸기"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
     </div>
@@ -1858,16 +1860,16 @@ function renderDetail(r) {
       <p class="text-[13px] text-slate-800 leading-relaxed whitespace-pre-line">${esc(m.memo || '')}${r.inquiries.map((q) => `\n· ${md(q.inquired_at.slice(0, 10))} 문의: ${esc(q.raw_note || '')}`).join('')}</p>
     </div>` : ''}
 
-    ${subBox(m)}
+    ${subBox(m)}${subLockBox(r)}
 
     <div class="mt-4 grid grid-cols-3 gap-2">
-      <button data-soon="결제 등록" class="soon py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold">결제 등록</button>
+      <button id="d-register2" class="py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold">등록 · 결제</button>
       ${m.phone ? `<a href="sms:${esc(m.phone)}" class="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-xs font-bold text-center">문자</a><a href="tel:${esc(m.phone)}" class="py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-center">전화</a>` : '<span class="py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold text-center">문자</span><span class="py-2.5 rounded-xl border border-slate-200 text-slate-400 text-xs font-bold text-center">전화</span>'}
       <button data-soon="홀딩" class="soon py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold">홀딩</button>
       <button data-soon="기간 연장" class="soon py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold">기간 연장</button>
       <button id="memo-open" class="py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold">메모 추가</button>
     </div>
-    <p class="mt-2 text-[11px] text-slate-400 text-center">결제·홀딩·기간 연장은 다음 단계에서 열어요 · 지금은 브로제이에서 해주세요</p>`;
+    <p class="mt-2 text-[11px] text-slate-400 text-center">홀딩·기간 연장은 다음 단계에서 열어요 · 지금은 브로제이에서 해주세요</p>`;
   document.querySelectorAll('.soon').forEach((b) => b.onclick = () => toast(`${b.dataset.soon}은 다음 단계에서 열어요. 지금은 브로제이에서 해주세요`));
   $('memo-open').onclick = () => { const st = (D && D.staff) || []; $('memo-staff').innerHTML = '<option value="">작성자 선택</option>' + st.map((x) => `<option ${x.name === lastStaff.get() ? 'selected' : ''}>${esc(x.name)}</option>`).join(''); $('memo-box').classList.toggle('hidden'); $('memo-text').focus(); };
   $('memo-save').onclick = async () => { const text = $('memo-text').value.trim(); if (!text) return; try { const staff = $('memo-staff').value; if (staff) lastStaff.set(staff); renderDetail(await crm('memoAdd', { member_id: m.id, text, staff })); toast('메모를 남겼어요'); } catch (e) { toast(e.message); } };
@@ -1878,7 +1880,8 @@ function renderDetail(r) {
   const tg = $('hist-toggle'); if (tg) tg.onclick = () => { histOpen = !histOpen; renderDetail(r); };
   document.querySelectorAll('.pedit').forEach((b) => b.onclick = () => openPassEdit(r, b.dataset.pid));
   document.querySelectorAll('.pundo').forEach((b) => b.onclick = () => undoRegister(r, b.dataset.pid));
-  $('d-register').onclick = () => { openRegister(r).then(() => { if (RG) { RG.fixed = true; renderRegister(); } }); };
+  if ($('sl-save')) $('sl-save').onclick = async () => { const b = $('sl-save'), er = $('sl-err'); er.classList.add('hidden'); b.disabled = true; try { renderDetail(await crm('subLocker', { member_id: r.member.id, locker_no: $('sl-no').value.replace(/\D/g, ''), staff: lastStaff.get() || null })); toast('구독 락커를 배정했어요'); D = null; loadDash().catch(() => {}); lockersLoaded = false; } catch (e) { er.textContent = e.message; er.classList.remove('hidden'); } finally { b.disabled = false; } };
+  $('d-register').onclick = $('d-register2').onclick = () => { openRegister(r).then(() => { if (RG) { RG.fixed = true; renderRegister(); } }); };
   icons();
 }
 
@@ -2204,6 +2207,16 @@ async function undoRegister(r, pid) {
 
 // ── 월구독 연결 ──
 const SUB_ST = { active: ['자동결제 중', 'text-blue-600'], payment_failed: ['결제 실패', 'text-rose-600'], cancelled: ['해지', 'text-slate-500'] };
+// 구독 락커 애드온인데 락커 번호가 아직 없으면 번호 넣는 칸
+function subLockBox(r) {
+  const sb = r.member.subscription;
+  if (!sb || !['active', 'paused'].includes(sb.status) || !(sb.addons || []).includes('locker')) return '';
+  const mine = (r.lockers || []).find((l) => l.billing === '구독 애드온' && ['사용 중', '예정', '홀딩'].includes(l.status));
+  if (mine) return `<div class="mt-2 text-[13px] text-slate-600">구독 락커 <b>${mine.locker_no}번</b> · 결제된 날(${mine.ends_on ? md(mine.ends_on) : '-'})까지 · 해지하면 그날 자동으로 끝나요</div>`;
+  return `<div class="mt-2 p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-[13px]"><div class="font-extrabold text-blue-800">월구독에 락커를 추가했어요 · 번호를 정해주세요</div>
+    <div class="mt-2 flex gap-2"><input id="sl-no" inputmode="numeric" placeholder="락커 번호" class="w-28 px-3 py-2 rounded-lg border border-blue-200 bg-white font-bold outline-none focus:border-blue-600"><button id="sl-save" class="px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold">배정</button></div>
+    <p id="sl-err" class="hidden mt-1.5 text-xs font-bold text-rose-600"></p></div>`;
+}
 function subBox(m) {
   const sb = m.subscription;
   if (!sb && m.sub !== '구독 중') return `<div class="mt-4 flex items-center justify-between gap-2 text-[13px]"><span class="text-slate-500">홈페이지 월구독 없음</span><button id="sub-link" class="text-xs font-bold text-blue-600 hover:underline">가족 구독에 연결</button></div>`;
