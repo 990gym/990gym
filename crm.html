@@ -19,7 +19,8 @@
 <style>
   /* 단계 배지: 대시보드 '회원 흐름'과 같은 색 */
   /* 폰: 옆으로 밀리지 않게 + 입력칸을 누를 때 화면이 확대되지 않게 (아이폰은 16px보다 작은 글자 칸을 누르면 확대한다) */
-  html, body { overflow-x: hidden; max-width: 100%; }
+  /* clip: 옆으로 밀림만 막고 스크롤 상자는 만들지 않는다 (hidden이면 왼쪽 메뉴·회원 상세가 스크롤을 못 따라온다) */
+  html, body { overflow-x: clip; max-width: 100%; }
   @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
   /* 폰: 표를 카드처럼 (옆으로 밀지 않게) — 칸 이름은 머리줄에서 가져온다 */
   @media (max-width: 639px) {
@@ -772,9 +773,26 @@ setInterval(() => { const exp = Number(sessionStorage.getItem('admin_expiry') ||
 // ── 탭 ──
 const TITLES = { dash: '대시보드', members: '회원', inquiry: '문의 등록', pt: 'PT', lockers: '락커', sales: '매출', report: '보고서', auto: '자동 문자', settings: '설정' };
 let current = 'dash';
-function go(tab) {
+// 뒤로가기: 화면(탭)·회원 상세를 열 때마다 브라우저 기록을 하나씩 남긴다 → 뒤로가기를 누르면 바로 전 화면으로
+const navUrl = (tab) => (tab === 'dash' ? location.pathname : `#${tab}`);
+function navPush(st) {
+  try {
+    const cur = history.state || {};
+    if (cur.tab === st.tab && (cur.member || null) === (st.member || null)) return;
+    if (!cur.tab) history.replaceState(st, '', navUrl(st.tab)); else history.pushState(st, '', navUrl(st.tab));
+  } catch (e) {}
+}
+const MODALS = ['done-modal', 'pass-modal', 'reg-modal', 'sub-modal', 'att-modal', 'more-sheet'];
+window.addEventListener('popstate', (e) => {
+  const st = e.state || { tab: TITLES[location.hash.slice(1)] ? location.hash.slice(1) : 'dash' };
+  MODALS.forEach((id) => { const el = $(id); if (el) el.classList.add('hidden'); });
+  doneKey = null;
+  go(st.tab, true);
+  if (st.member) openMember(st.member, false, true);
+});
+function go(tab, fromHistory) {
   current = tab;
-  try { history.replaceState(null, '', tab === 'dash' ? location.pathname : `#${tab}`); } catch (e) {} // 새로고침해도 이 화면 그대로
+  if (!fromHistory) navPush({ tab });
   document.querySelectorAll('.tab').forEach((s) => s.classList.toggle('hidden', s.id !== `tab-${tab}`));
   document.querySelectorAll('.nav').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('bg-white', on); b.classList.toggle('text-purple-900', on); b.classList.toggle('text-blue-100', !on); b.classList.toggle('hover:bg-white/10', !on); });
   const sb = $('side-todo'); if (sb) { sb.classList.toggle('bg-blue-600', tab === 'dash'); sb.classList.toggle('text-white', tab === 'dash'); sb.classList.toggle('bg-white/15', tab !== 'dash'); }
@@ -1091,7 +1109,7 @@ function openDone(key) {
 }
 function closeDone() { $('done-modal').classList.add('hidden'); doneKey = null; }
 $('dm-close').addEventListener('click', closeDone);
-$('done-modal').addEventListener('click', (e) => { if (e.target.id === 'done-modal') closeDone(); });
+// 적던 내용이 날아가지 않게: 바깥을 눌러도 닫지 않는다 (X로 닫기)
 $('dm-ok').addEventListener('click', async () => {
   const err = $('dm-err'); err.classList.add('hidden');
   if (!doneStaff) { err.textContent = '처리한 직원을 골라주세요'; err.classList.remove('hidden'); return; }
@@ -1133,7 +1151,7 @@ async function loadRevenue() {
       card('미수 · 결제 실패', `${fmt(r.unpaid.amount)}원`, `월구독 ${r.unpaid.count}건 · 오늘 할 일에 올라가 있어요`, r.unpaid.count ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200', r.unpaid.count ? 'text-rose-600' : '');
     $('rv-list-title').textContent = r.listIsToday ? '오늘 들어온 결제' : '최근 들어온 결제 (오늘은 아직 없어요)';
     $('rv-list-sum').textContent = r.listIsToday ? `${fmt(r.list.reduce((a, x) => a + x.amount, 0))}원` : '';
-    $('rv-list').innerHTML = r.list.map((x) => `<div class="px-4 sm:px-5 py-3 flex items-center gap-2.5 sm:gap-3 hover:bg-slate-50"><span class="text-xs font-bold text-slate-500 w-10 sm:w-12 shrink-0">${md(String(x.at).slice(0, 10))}</span><div class="flex-1 min-w-0 sm:flex-none sm:w-auto"><div class="flex items-center gap-1.5"><button data-id="${x.member_id}" class="rvl font-extrabold sm:w-20 truncate text-left hover:text-blue-600">${esc(x.name)}</button><span class="shrink-0 whitespace-nowrap text-[11px] font-extrabold px-1.5 py-0.5 rounded ${x.kind === '재등록' ? 'bg-purple-900 text-white' : 'bg-blue-600 text-white'}">${esc(x.kind || '')}</span></div><span class="sm:hidden block text-[12px] text-slate-500 truncate">${esc(x.product)}${payDetail(x) ? ` · ${esc(payDetail(x))}` : ''}</span></div><span class="hidden sm:block text-[13px] text-slate-600 flex-1 min-w-0 truncate">${esc(x.product)}${payDetail(x) ? `<span class="block text-[11px] font-bold text-slate-400 truncate">${esc(payDetail(x))}</span>` : ''}</span>${x.group === '월구독' ? '<span class="shrink-0 text-[11px] font-bold text-slate-400 w-[72px] sm:w-24 text-center">자동결제</span>' : `<select data-id="${x.id}" class="rvm shrink-0 w-[72px] sm:w-24 px-1.5 py-1 rounded-lg border text-xs font-bold bg-white ${x.method ? 'border-slate-200' : 'border-rose-300 text-rose-600'}"><option value="">방법?</option>${x.method && !['카드', '현금', '계좌이체'].includes(x.method) ? `<option selected disabled>${esc(x.method)}</option>` : ''}${['카드', '현금', '계좌이체'].map((k) => `<option ${x.method === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`}<span class="font-extrabold shrink-0 sm:w-24 text-right whitespace-nowrap">${fmt(x.amount)}원</span></div>`).join('') || '<p class="p-6 text-center text-sm text-slate-500">결제가 없어요</p>';
+    $('rv-list').innerHTML = r.list.map((x) => `<div class="px-4 sm:px-5 py-3 flex items-center gap-2.5 sm:gap-3 hover:bg-slate-50"><span class="text-xs font-bold text-slate-500 w-10 sm:w-12 shrink-0">${md(String(x.at).slice(0, 10))}</span><div class="flex-1 min-w-0 sm:flex-none sm:w-auto"><div class="flex items-center gap-1.5">${x.member_id ? `<button data-id="${x.member_id}" class="rvl font-extrabold sm:w-20 truncate text-left hover:text-blue-600">${esc(x.name)}</button>` : `<span class="font-extrabold sm:w-20 truncate text-slate-500">${esc(x.name)}</span>`}<span class="shrink-0 whitespace-nowrap text-[11px] font-extrabold px-1.5 py-0.5 rounded ${x.kind === '재등록' ? 'bg-purple-900 text-white' : 'bg-blue-600 text-white'}">${esc(x.kind || '')}</span></div><span class="sm:hidden block text-[12px] text-slate-500 truncate">${esc(x.product)}${payDetail(x) ? ` · ${esc(payDetail(x))}` : ''}</span></div><span class="hidden sm:block text-[13px] text-slate-600 flex-1 min-w-0 truncate">${esc(x.product)}${payDetail(x) ? `<span class="block text-[11px] font-bold text-slate-400 truncate">${esc(payDetail(x))}</span>` : ''}</span>${x.group === '월구독' ? '<span class="shrink-0 text-[11px] font-bold text-slate-400 w-[72px] sm:w-24 text-center">자동결제</span>' : `<select data-id="${x.id}" class="rvm shrink-0 w-[72px] sm:w-24 px-1.5 py-1 rounded-lg border text-xs font-bold bg-white ${x.method ? 'border-slate-200' : 'border-rose-300 text-rose-600'}"><option value="">방법?</option>${x.method && !['카드', '현금', '계좌이체'].includes(x.method) ? `<option selected disabled>${esc(x.method)}</option>` : ''}${['카드', '현금', '계좌이체'].map((k) => `<option ${x.method === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`}<span class="font-extrabold shrink-0 sm:w-24 text-right whitespace-nowrap">${fmt(x.amount)}원</span></div>`).join('') || '<p class="p-6 text-center text-sm text-slate-500">결제가 없어요</p>';
     document.querySelectorAll('.rvl').forEach((b) => b.onclick = () => openMember(b.dataset.id));
     document.querySelectorAll('.rvm').forEach((el) => el.onchange = async () => { try { await crm('paymentMethod', { id: el.dataset.id, method: el.value }); el.classList.toggle('border-rose-300', !el.value); el.classList.toggle('text-rose-600', !el.value); toast(el.value ? `'${el.value}'로 남겼어요` : '결제 방법을 지웠어요'); loadRevenue(); } catch (e) { toast(e.message); } });
     const MC = { 카드: '#2B5FC7', 현금: '#1A2744', 계좌이체: '#8FAEEE', 미입력: '#C7CED9' };
@@ -1799,9 +1817,11 @@ function kindOf(p) {
   return /PT/.test(p.product_name) ? 'PT' : /구독/.test(p.product_name) ? '월구독' : /GX|VIP|V\.I\.P|줌바|요가|스피닝|전종목/.test(p.product_name) ? 'GX' : '헬스 기간권';
 }
 let histOpen = false;
-async function openMember(id, fromList) {
+async function openMember(id, fromList, fromHistory) {
   selected = id; histOpen = false;
-  if (current !== 'members') go('members');
+  if (current !== 'members') go('members', true);
+  // 넓은 화면에서 목록 안에서 회원을 바꿔 보는 건 기록을 쌓지 않는다 (뒤로가기 = 전 화면으로)
+  if (!fromHistory) { if (fromList && window.innerWidth >= 1024) { try { history.replaceState({ tab: 'members', member: id }, '', navUrl('members')); } catch (e) {} } else navPush({ tab: 'members', member: id }); }
   document.querySelectorAll('.row-m').forEach((b) => b.classList.toggle('bg-blue-50/70', b.dataset.id === id));
   const box = $('detail');
   box.scrollTop = 0;
@@ -1830,7 +1850,9 @@ function renderDetail(r) {
   const paidPasses = r.passes.filter((p) => p.status !== '무효');
   const memberships = paidPasses.filter((p) => ['헬스 기간권', 'GX', '월구독'].includes(kindOf(p)));
   const renew = Math.max(0, memberships.length - 1);
-  const total = r.payments.reduce((a, p) => a + p.amount, 0);
+  const total = r.payments.filter((p) => !p.sales_excluded).reduce((a, p) => a + p.amount, 0);
+  // 이용권 없이 들어온 결제 (매출장에서 넣은 락커·PT 등) — 최신순
+  const extraPays = r.payments.filter((p) => !p.pass_id).slice().reverse();
   const first = paidPasses[0]?.starts_on;
   const hist = paidPasses.slice().reverse();
   const methodOf = {}; r.payments.forEach((x) => { if (x.pass_id && x.method) { const d = payDetail(x); methodOf[x.pass_id] = d && !(x.method_split && Object.keys(x.method_split).length > 1) ? `${x.method} · ${d}` : (d || x.method); } });
@@ -1890,6 +1912,8 @@ function renderDetail(r) {
           </li>`; }).join('') || '<li class="text-sm text-slate-500">기록이 없어요</li>'}
       </ol>
       ${hist.length > 5 ? `<button id="hist-toggle" class="mt-2 w-full py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">${histOpen ? '접기' : `전체 이력 ${hist.length}건 보기`}</button>` : ''}
+      ${extraPays.length ? `<div class="mt-3 pt-3 border-t border-slate-100"><div class="text-xs font-extrabold text-slate-500">그 밖의 결제 · 매출장</div>
+        <div class="mt-1.5 space-y-1">${extraPays.map((p) => `<div class="flex items-baseline gap-2 text-[13px]"><span class="text-xs font-bold text-slate-500 tabular-nums shrink-0">${ymd(new Date(Date.parse(p.paid_at) + 9 * 3600e3).toISOString().slice(0, 10))}</span><span class="flex-1 min-w-0 truncate font-semibold text-slate-800">${esc(p.item || '결제')}${p.sales_excluded ? ' <span class="hchip bg-slate-100 text-slate-500">매출 제외</span>' : ''}</span><span class="font-extrabold tabular-nums shrink-0 ${p.amount < 0 ? 'text-rose-600' : ''} ${p.sales_excluded ? 'line-through text-slate-400' : ''}">${fmt(p.amount)}원</span></div>`).join('')}</div></div>` : ''}
     </div>
 
     ${r.lockers.length ? `<div class="mt-4"><span class="text-sm font-extrabold">락커</span>
@@ -2002,7 +2026,7 @@ function renderPassEdit() {
   document.querySelectorAll('.pmq').forEach((b) => b.onclick = () => { const base = $('pm-end').value || addDaysISO(0); const n = b.dataset.n; $('pm-end').value = n[0] === 'm' ? addMonths(addDays(base, 1), +n.slice(1)) : addDays(base, +n); });
 }
 $('pm-close').onclick = () => $('pass-modal').classList.add('hidden');
-$('pass-modal').addEventListener('click', (e) => { if (e.target.id === 'pass-modal') $('pass-modal').classList.add('hidden'); });
+// 적던 내용이 날아가지 않게: 바깥을 눌러도 닫지 않는다 (X로 닫기)
 $('pm-save').onclick = async () => {
   const btn = $('pm-save'), err = $('pm-err'); err.classList.add('hidden'); btn.disabled = true; btn.textContent = '저장 중…';
   try {
@@ -2213,7 +2237,7 @@ function rgSaveLabel() {
   btn.textContent = who && what ? `${who}님 · ${what} · ${won(amt)} 등록하기` : '등록하기';
 }
 $('rg-close').onclick = () => $('reg-modal').classList.add('hidden');
-$('reg-modal').addEventListener('click', (e) => { if (e.target.id === 'reg-modal') $('reg-modal').classList.add('hidden'); });
+// 적던 내용이 날아가지 않게: 바깥을 눌러도 닫지 않는다 (X로 닫기)
 $('rg-save').onclick = async () => {
   const btn = $('rg-save'), err = $('rg-err'); err.classList.add('hidden');
   const fail = (t) => { err.textContent = t; err.classList.remove('hidden'); };
@@ -2365,7 +2389,8 @@ $('push-btn').addEventListener('click', async () => {
 async function start() {
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   const h = location.hash.slice(1);
-  go(TITLES[h] ? h : 'dash'); icons();
+  try { history.replaceState({ tab: TITLES[h] ? h : 'dash' }, '', location.href); } catch (e) {}
+  go(TITLES[h] ? h : 'dash', true); icons();
   if (h === 'att') { atTab = 'all'; openAttendance(addDaysISO(0)); } // 출석 알림을 눌러서 열었으면 출석부부터
   try { await loadDash(); } catch (e) { toast(e.message); }
   pushState();
