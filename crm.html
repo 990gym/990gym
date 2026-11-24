@@ -401,6 +401,7 @@
         <h2 class="text-2xl font-extrabold tracking-tight">자동 문자 · 알림 규칙</h2>
         <p class="text-xs text-slate-500 mt-1">정해진 순간에 문자가 자동으로 나가거나, 직원의 '오늘 할 일'에 카드가 올라가요. 사람이 해야 더 좋은 건 직원 할 일로 넘겨요.</p>
       </div>
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5"><div class="flex items-baseline justify-between gap-2 flex-wrap"><strong class="text-sm font-extrabold">상황별 문자 문구</strong><span class="text-xs text-slate-500">'오늘'에서 문자 버튼을 누르면 이 문구가 채워진 채로 문자 앱이 열려요 · {이름} {끝나는날}은 자동으로 바뀌어요</span></div><div id="sms-box" class="mt-3"></div></div>
       <div class="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-slate-700 leading-relaxed"><b class="text-amber-800">아직 문자 발송 업체가 연결 전이에요.</b> 켜 둔 규칙은 지금은 <b>직원 할 일</b>로만 올라가고, 업체(카카오 알림톡)를 연결하면 그때부터 문자가 자동으로 나가요. 숫자는 지금 기준 대상 인원이에요.</div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
@@ -775,7 +776,7 @@ async function call(path, body) {
   return data;
 }
 // 보기 요청 목록 (서울 서버가 안 될 때 미국 서버로 다시 보내도 되는 것)
-const READS = ['pushKey', 'pushWho', 'memberAttendance', 'renewEngine', 'renewCheck', 'todayQueue', 'products', 'regInquiries', 'dashboard', 'members', 'member', 'revenue', 'salesDays', 'salesYear', 'reportV2', 'report', 'inquiryList', 'ptBoard', 'lockerBoard', 'msgRules', 'staffList', 'financeGet', 'attendanceDay', 'subSearch', 'staffAttendance'];
+const READS = ['pushKey', 'pushWho', 'memberAttendance', 'smsTemplates', 'renewEngine', 'renewCheck', 'todayQueue', 'products', 'regInquiries', 'dashboard', 'members', 'member', 'revenue', 'salesDays', 'salesYear', 'reportV2', 'report', 'inquiryList', 'ptBoard', 'lockerBoard', 'msgRules', 'staffList', 'financeGet', 'attendanceDay', 'subSearch', 'staffAttendance'];
 const crm = (action, params = {}) => call('crm', { action, ...params });
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2600); }
 
@@ -818,7 +819,7 @@ setInterval(() => { const exp = Number(sessionStorage.getItem('admin_expiry') ||
 const TITLES = { today: '오늘', check: '검증', dash: '현황', members: '사람', inquiry: '문의 등록', pt: 'PT', lockers: '락커', sales: '매출', report: '보고서', auto: '자동 문자', settings: '설정', work: '직원 출근부' };
 let current = 'today';
 // 메뉴는 4묶음: 오늘 / 고객 / 경영 / 설정. 묶음 안에서는 위쪽 탭으로 오간다.
-const GROUPS = { today: [['today', '오늘']], people: [['members', '회원'], ['inquiry', '문의'], ['pt', 'PT'], ['lockers', '락커']], biz: [['dash', '현황'], ['sales', '매출'], ['report', '보고서'], ['work', '직원 출근부'], ['check', '검증']], set: [['settings', '기본 설정'], ['auto', '자동 문자']] };
+const GROUPS = { today: [['today', '오늘']], people: [['members', '회원'], ['inquiry', '문의'], ['pt', 'PT'], ['lockers', '락커']], biz: [['dash', '현황'], ['sales', '매출'], ['report', '보고서'], ['work', '직원 출근부'], ['check', '검증']], set: [['settings', '기본 설정'], ['auto', '문자']] };
 const groupOf = (tab) => Object.keys(GROUPS).find((g) => GROUPS[g].some(([t]) => t === tab)) || 'today';
 function renderSubnav(tab) {
   const el = $('subnav'), list = GROUPS[groupOf(tab)];
@@ -1201,13 +1202,16 @@ const man1 = (v) => `${(Math.round((v || 0) / 1000) / 10).toLocaleString('ko-KR'
 async function loadToday() { try { TD = await crm('todayQueue'); renderToday(); } catch (e) { $('td-list').innerHTML = `<p class="text-sm text-rose-600 font-bold">${esc(e.message)}</p>`; } }
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 const VERB = { call: ['phone', '전화'], text: ['message-circle', '문자'], meet: ['hand', '인사'] };
+// 전화·문자 둘 다 누를 수 있다. 문자는 그 상황에 맞는 문구가 채워진 채로 열린다. 마지막에 누른 쪽이 '방법'으로 남는다
+const tdMeth = {};
+function smsText(x) {
+  const t = (TD && TD.sms && TD.sms[x.sms]) || '';
+  return t.replace(/\{이름\}/g, x.name || '').replace(/\{끝나는날\}/g, x.ends_on ? `${+x.ends_on.slice(5, 7)}월 ${+x.ends_on.slice(8)}일` : '곧').trim();
+}
 function tdVerb(x) {
-  const [ic, l] = VERB[x.verb] || VERB.meet, cls = 'h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-1.5 text-sm font-bold text-slate-700';
-  const inner = `<i data-lucide="${ic}" class="w-4 h-4"></i>${l}`;
-  if (!x.phone || x.verb === 'meet') return x.phone ? `<a href="tel:${esc(x.phone)}" class="${cls}"><i data-lucide="phone" class="w-4 h-4"></i>전화</a>` : '';
-  if (x.verb === 'call') return `<a href="tel:${esc(x.phone)}" class="${cls}">${inner}</a>`;
-  const body = encodeURIComponent(`${x.name}님, 990짐이에요. 요즘 운동은 어떠세요? 이번 주에 편한 시간 알려 주시면 루틴 같이 봐 드릴게요.`);
-  return `<a href="sms:${esc(x.phone)}${isIOS ? '&' : '?'}body=${body}" class="${cls}">${inner}</a>`;
+  if (!x.phone) return '';
+  const cls = 'td-v h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-1.5 text-sm font-bold text-slate-700';
+  return `<a href="tel:${esc(x.phone)}" data-k="${esc(x.key)}" data-m="전화" class="${cls}"><i data-lucide="phone" class="w-4 h-4"></i>전화</a><a href="sms:${esc(x.phone)}${isIOS ? '&' : '?'}body=${encodeURIComponent(smsText(x))}" data-k="${esc(x.key)}" data-m="문자" class="${cls}" title="${esc(smsText(x))}"><i data-lucide="message-circle" class="w-4 h-4"></i>문자</a>`;
 }
 function tdRow(x) {
   const red = x.due === 'now' && !x.in_gym;
@@ -1250,10 +1254,14 @@ function renderToday() {
   const J = tdJust && it.find((x) => x.key === tdJust && x.done);
   const chip = (on) => `px-3 py-2 rounded-xl text-[13px] font-bold border ${on ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'}`;
   const plus = (n) => { const d = new Date(Date.parse(`${TD.today}T00:00:00Z`) + n * 864e5); return d.toISOString().slice(0, 10); };
+  const RES = ['통화함', '안 받음', '재등록 의사', '거절'], jParts = J ? String(J.result || '').split(' · ') : [], jRes = RES.includes(jParts[0]) ? jParts[0] : null, jNote = jRes ? jParts.slice(1).join(' · ') : jParts.join(' · ');
   const just = J ? `<div class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
       <div class="flex items-center gap-2 text-[14px] font-extrabold text-emerald-800"><span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center"><i data-lucide="check" class="w-3 h-3"></i></span>${esc(J.name)}님 연락을 기록했어요 <span class="text-[11px] font-bold text-emerald-700/70">${esc(J.done_by || '')} · ${J.done_at ? new Date(J.done_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}</span><button id="tj-x" class="ml-auto text-xs font-bold text-slate-500">닫기</button></div>
+      <div class="mt-3 text-[11px] font-bold text-slate-500">누가 했나요</div>
+      <div class="mt-1.5 flex flex-wrap gap-1.5">${(TD.staff || []).filter((s) => s.name).map((s) => `<button data-s="${esc(s.name)}" class="tj-s ${chip(J.done_by === s.name)}">${esc(s.name)}</button>`).join('')}</div>
       <div class="mt-3 text-[11px] font-bold text-slate-500">결과 <span class="font-semibold text-slate-400">· 안 골라도 돼요</span></div>
-      <div class="mt-1.5 flex flex-wrap gap-1.5">${['통화함', '안 받음', '재등록 의사', '거절'].map((r) => `<button data-r="${r}" class="tj-r ${chip(J.result === r)}">${r}</button>`).join('')}</div>
+      <div class="mt-1.5 flex flex-wrap gap-1.5">${['통화함', '안 받음', '재등록 의사', '거절'].map((r) => `<button data-r="${r}" class="tj-r ${chip(jRes === r)}">${r}</button>`).join('')}</div>
+      <div class="mt-2 flex gap-1.5"><input id="tj-note" maxlength="200" value="${esc(jNote)}" placeholder="세부 내용 (안 적어도 돼요) 예: 1월 9일에 다시 오신다고 함" class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-[13px]"><button id="tj-note-save" class="shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-white text-[13px] font-bold text-slate-700">저장</button></div>
       <div class="mt-3 text-[11px] font-bold text-slate-500">다음 연락 <span class="font-semibold text-slate-400">· 정하면 그날 '오늘'에 다시 올라와요</span></div>
       <div class="mt-1.5 flex flex-wrap items-center gap-1.5">${[['내일', 1], ['3일 뒤', 3], ['1주 뒤', 7], ['2주 뒤', 14]].map(([l, n]) => `<button data-d="${plus(n)}" class="tj-d ${chip(J.next_on === plus(n))}">${l}</button>`).join('')}<input id="tj-date" type="date" min="${plus(1)}" max="${plus(90)}" value="${J.next_on || ''}" class="px-2 py-[7px] rounded-xl border border-slate-200 bg-white text-[13px] font-bold text-slate-700">${J.next_on ? `<button data-d="" class="tj-d text-xs font-bold text-slate-500 underline underline-offset-2 ml-1">날짜 지우기</button>` : ''}</div>
     </div>` : '';
@@ -1292,17 +1300,20 @@ function renderToday() {
     if (!who || !(TD.staff || []).some((st) => st.name === who)) { if (!D) { try { D = await crm('dashboard'); } catch (e) { /* 명단 없이도 고를 수 있게 */ } } who = await pickStaff('연락 기록에 남길 이름이에요. 이 기기에서 한 번만 고르면 돼요.'); if (!who) return; lastStaff.set(who); }
     b.disabled = true; b.textContent = '저장 중…';
     try {
-      await crm('taskDone', { key: x.key, staff: who, method: (VERB[x.verb] || VERB.meet)[1] });
+      await crm('taskDone', { key: x.key, staff: who, method: tdMeth[x.key] || (VERB[x.verb] || VERB.meet)[1] });
       x.done = true; x.done_by = who; x.done_at = new Date().toISOString(); tdJust = x.key; D = null;
       renderToday(); loadToday();
     } catch (e) { toast(e.message); b.disabled = false; b.textContent = '했어요'; }
   });
-  const upd = async (patch) => { const x = TD.items.find((y) => y.key === tdJust); if (!x) return; try { const r = await crm('contactUpdate', { key: x.key, ...patch }); if ('result' in r) x.result = r.result; if ('next_on' in r) x.next_on = r.next_on; renderToday(); } catch (e) { toast(e.message); } };
+  const upd = async (patch) => { const x = TD.items.find((y) => y.key === tdJust); if (!x) return; try { const r = await crm('contactUpdate', { key: x.key, ...patch }); if ('result' in r) x.result = r.result; if ('next_on' in r) x.next_on = r.next_on; if (r.done_by) { x.done_by = r.done_by; lastStaff.set(r.done_by); } renderToday(); } catch (e) { toast(e.message); } };
+  const tjn = $('tj-note'), tjs = $('tj-note-save'); if (tjn) { const sv = () => { if (tjn.value.trim() !== jNote) upd({ note: tjn.value.trim() }).then(() => toast('적어 뒀어요')); }; tjs.onclick = sv; tjn.onkeydown = (e) => { if (e.key === 'Enter') sv(); }; }
+  document.querySelectorAll('.tj-s').forEach((b) => b.onclick = () => upd({ staff: b.dataset.s }));
   document.querySelectorAll('.tj-r').forEach((b) => b.onclick = () => upd({ result: b.dataset.r }));
   document.querySelectorAll('.tj-d').forEach((b) => b.onclick = () => upd({ next_on: b.dataset.d }));
   const tjd = $('tj-date'); if (tjd) tjd.onchange = () => { if (tjd.value) upd({ next_on: tjd.value }); };
   const tjx = $('tj-x'); if (tjx) tjx.onclick = () => { tdJust = null; renderToday(); };
   document.querySelectorAll('.td-more').forEach((b) => b.onclick = () => { tdJust = b.dataset.k; renderToday(); window.scrollTo({ top: $('td-pri').offsetTop - 80, behavior: 'smooth' }); });
+  document.querySelectorAll('.td-v').forEach((a) => a.addEventListener('click', () => { tdMeth[a.dataset.k] = a.dataset.m; }));
   const tck = $('td-ck'); if (tck) tck.onclick = () => go('check');
   document.querySelectorAll('.td-undo').forEach((b) => b.onclick = async () => { try { await crm('taskUndo', { key: b.dataset.k }); if (tdJust === b.dataset.k) tdJust = null; toast('되돌렸어요'); D = null; loadDash().catch(() => {}); loadToday(); } catch (e) { toast(e.message); } });
   document.querySelectorAll('.td-name').forEach((b) => b.onclick = () => (b.dataset.m ? openMember(b.dataset.m) : openInquiry(b.textContent.trim())));
@@ -1892,7 +1903,15 @@ function renderPTRows() {
 let autoLoaded = false, AUTO = null;
 async function loadAuto() {
   autoLoaded = true;
+  loadSms();
   try { AUTO = await crm('msgRules'); renderAuto(); } catch (e) { $('auto-rules').innerHTML = `<p class="p-5 text-sm text-rose-600 font-bold">${esc(e.message)}</p>`; }
+}
+let SMS = null;
+async function loadSms() { try { SMS = (await crm('smsTemplates')).templates; renderSms(); } catch (e) { $('sms-box').innerHTML = `<p class="text-sm text-rose-600 font-bold">${esc(e.message)}</p>`; } }
+function renderSms() {
+  $('sms-box').innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${SMS.map((t) => `<label class="block"><span class="text-[12px] font-extrabold text-slate-700">${esc(t.title)}${t.edited ? ' <span class="font-semibold text-blue-600">· 고침</span>' : ''}</span><textarea data-k="${t.key}" rows="3" maxlength="300" class="sms-t mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-[13px] leading-snug focus:border-blue-600 outline-none">${esc(t.body)}</textarea></label>`).join('')}</div>
+    <div class="mt-3 flex items-center gap-2"><button id="sms-save" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-sm font-extrabold">문구 저장</button><span class="text-xs text-slate-400">칸을 비우고 저장하면 처음 문구로 돌아가요</span></div>`;
+  $('sms-save').onclick = async () => { try { SMS = (await crm('smsTemplatesSave', { templates: [...document.querySelectorAll('.sms-t')].map((x) => ({ key: x.dataset.k, body: x.value })) })).templates; renderSms(); if (TD) loadToday(); toast('문구를 저장했어요'); } catch (e) { toast(e.message); } };
 }
 function renderAuto() {
   const A = AUTO;
