@@ -1147,16 +1147,19 @@ function trimDash() {
   const right = $('todo-section') && $('todo-section').querySelector('.lg\\:col-span-4'); if (right) right.className = 'lg:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start';
 }
 // ── 고리 퍼널: 유입 → 등록 → 유지 → 재등록 대상 → 이탈, 재등록·복귀로 다시 돌아온다 (전부 자동 계산) ──
+let loopLost = false, loopAsk = false;
 function renderLoop() {
   const box = $('loop'); if (!box || !D) return;
-  const S = D.stages || {}, F = (FM && FM.funnel) || null, pc = (a, b) => (b ? Math.round(a / b * 100) : null);
+  // 칸 숫자는 사람 목록과 같은 계산을 쓴다 (누르면 똑같은 인원이 열리도록)
+  if (!chipCounts && !loopAsk) { loopAsk = true; crm('members', { limit: 1 }).then((r) => { if (r.counts) { chipCounts = chipCounts || r.counts; renderLoop(); } }).catch(() => {}); }
+  const S = chipCounts || D.stages || {}, F = (FM && FM.funnel) || null, pc = (a, b) => (b ? Math.round(a / b * 100) : null);
   const lost = F ? Math.max(0, F.ended - F.renewed) : null;
   const steps = [
-    ['유입', F ? F.inquiries : '-', `이번 달 문의 · 체험 ${S['체험'] || 0}명`, '체험', F ? pc(F.fromInq, F.inquiries) : null, '등록'],
+    ['유입', F ? F.inquiries : '-', '이번 달 문의', '@inq', F ? pc(F.fromInq, F.inquiries) : null, '등록'],
     ['등록', S['신규'] || 0, '등록하고 4주 안', '신규', D.totals.settle ? pc(D.totals.settle.kept, D.totals.settle.n) : null, '유지'],
-    ['유지', (S['정착'] || 0) + (S['미출석'] || 0), `뜸한 분 ${S['미출석'] || 0}명`, '정착', null, ''],
+    ['유지', (S['정착'] || 0) + (S['미출석'] || 0), `뜸한 분 ${S['미출석'] || 0}명`, '유지', null, ''],
     ['재등록 대상', S['만료 예정'] || 0, '2주 안에 끝나요', '만료 예정', F ? pc(lost, F.ended) : null, '이탈'],
-    ['이탈', lost == null ? '-' : lost, '이번 달 재등록 안 함', '만료·이탈', null, ''],
+    ['이탈', lost == null ? '-' : lost, '이번 달 재등록 안 함', '@lost', null, ''],
   ];
   const arrow = (pct, red) => `<div class="flex sm:flex-col items-center justify-center gap-1 sm:w-12 shrink-0 text-[11px] font-extrabold ${red ? 'text-rose-600' : 'text-blue-600'}">${pct != null ? `<span>${pct}%</span>` : ''}<i data-lucide="arrow-right" class="hidden sm:block w-4 h-4 ${pct == null ? 'text-slate-300' : ''}"></i><i data-lucide="arrow-down" class="sm:hidden w-4 h-4 ${pct == null ? 'text-slate-300' : ''}"></i></div>`;
   const rr = F ? pc(F.renewed, F.ended) : null;
@@ -1167,7 +1170,11 @@ function renderLoop() {
       <div class="px-3 py-2.5 rounded-xl bg-blue-50 text-blue-800 flex items-center gap-2"><i data-lucide="undo-2" class="w-4 h-4 shrink-0"></i><span>복귀 ${F ? `${F.returned || 0}명` : '-'} · 떠났던 분이 다시 등록했어요</span></div>
     </div>
     <p class="mt-2.5 text-[11px] text-slate-400">화살표 숫자: 문의한 분 중 등록 · 시작한 지 1~2달 된 분 중 지금도 오시는 분${D.totals.settle ? ` (${D.totals.settle.n}명 중 ${D.totals.settle.kept}명)` : ''} · 이번 달 끝난 분 중 재등록 안 한 분</p>`;
-  box.querySelectorAll('.lp').forEach((b) => b.onclick = () => openList(b.dataset.st));
+  // 누르면 그 칸의 숫자와 같은 사람들이 열린다: 유입 = 이번 달 문의 목록, 이탈 = 이번 달 재등록 안 한 분 이름
+  const gone = F && F.lists && F.lists['재등록'] ? F.lists['재등록'].filter((x) => x.state === '안 함') : [];
+  if (loopLost) box.insertAdjacentHTML('beforeend', `<div class="mt-3 pt-3 border-t border-slate-100"><div class="text-[13px] text-slate-600">이번 달 이용권이 끝났는데 재등록 안 한 <b class="text-slate-900">${gone.length}명</b></div><div class="mt-2 flex flex-wrap gap-1.5">${gone.map((x) => `<button data-m="${x.member_id}" class="lp-m px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[12px] font-bold">${esc(x.name)} <span class="font-semibold text-slate-400">${esc(x.product || '')} · ${md(x.day)}</span></button>`).join('') || '<span class="text-[12px] text-slate-400">없어요</span>'}</div></div>`);
+  box.querySelectorAll('.lp-m').forEach((b) => b.onclick = () => openMember(b.dataset.m));
+  box.querySelectorAll('.lp').forEach((b) => b.onclick = () => { const st = b.dataset.st; if (st === '@inq') openInquiry('', 'month'); else if (st === '@lost') { loopLost = !loopLost; renderLoop(); } else openList(st); });
   icons();
 }
 // ── 숫자 > 검증: 예측을 점수로 믿지 않고, 실제 재등록 결과와 달마다 맞춰 본다 ──
@@ -2120,7 +2127,7 @@ const newTag = () => '';
 async function loadList(append = false) {
   listLoaded = true; renderChips();
   if (!append && !selected) $('detail').classList.add('hidden'); // 폰: 고른 회원이 없으면 상세를 숨긴다 (넓은 화면은 lg:block 으로 항상 보임)
-  const label = listState.q ? `'${esc(listState.q)}' 검색` : (CHIPS.find((c) => c[0] === listState.stage) || CHIPS[0])[1];
+  const label = listState.q ? `'${esc(listState.q)}' 검색` : listState.stage === '유지' ? '유지 · 정착 + 2주 미출석' : (CHIPS.find((c) => c[0] === listState.stage) || CHIPS[0])[1];
   $('list-title').innerHTML = label + (listState.q ? ` <button id="list-inq" class="ml-2 text-xs font-bold text-blue-600 hover:underline">문의 기록에서 찾기 →</button>` : '');
   const li = $('list-inq'); if (li) li.onclick = () => openInquiry(listState.q);
   if (!append) { $('list').innerHTML = $('mtable').innerHTML = ''; $('list').innerHTML = '<p class="p-6 text-center text-sm text-slate-500">불러오는 중…</p>'; $('mtable').innerHTML = '<tr><td colspan="7" class="p-6 text-center text-sm text-slate-500">불러오는 중…</td></tr>'; }
@@ -2173,7 +2180,7 @@ document.querySelectorAll('.msort').forEach((th) => th.addEventListener('click',
 $('msort-m').addEventListener('change', (e) => { const [k, d] = e.target.value.split(':'); listSort = { key: k, dir: d }; listState.offset = 0; loadList(); });
 let searchT;
 // 검색은 하나: 회원에서 찾고, 같은 말로 문의 기록도 바로 열 수 있다
-function openInquiry(q) { inqF.q = q || ''; inqF.period = 'all'; inqShow = 50; go('inquiry'); $('inq-q').value = inqF.q; if (inqLoaded) renderInqList(); }
+function openInquiry(q, period) { inqF.q = q || ''; inqF.period = period || 'all'; inqShow = 50; go('inquiry'); $('inq-q').value = inqF.q; if (inqLoaded) renderInqList(); }
 const onSearch = (v) => { clearTimeout(searchT); searchT = setTimeout(() => { const q = v.trim(); listState = { stage: '', q, offset: 0 }; selected = null; if (current !== 'members') go('members'); loadList(); }, 300); };
 $('gsearch').addEventListener('input', (e) => { $('msearch').value = e.target.value; onSearch(e.target.value); });
 $('msearch').addEventListener('input', (e) => { $('gsearch').value = e.target.value; onSearch(e.target.value); });
