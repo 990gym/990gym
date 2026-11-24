@@ -2186,24 +2186,6 @@ $('at-prev').onclick = () => { atTab = 'all'; openAttendance(addDays(atDate, -1)
 $('at-next').onclick = () => { if (AT && AT.date < AT.today) { openAttendance(addDays(atDate, 1)); } };
 $('k-gym').addEventListener('click', () => { atTab = 'all'; openAttendance(addDaysISO(0)); });
 // 앱이 이미 열려 있을 때 출석 알림을 누르면 출석부를 띄운다
-// '띵동' (Web Audio로 만든 2음 차임)
-let _ac = null;
-function dingdong() {
-  try {
-    _ac = _ac || new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume();
-    const t0 = _ac.currentTime + 0.02;
-    [[659.25, 0], [523.25, 0.55], [659.25, 1.6], [523.25, 2.15]].forEach(([f, d]) => {
-      [[1, 0.5], [2.01, 0.12], [3.02, 0.05]].forEach(([h, g]) => {
-        const o = _ac.createOscillator(), v = _ac.createGain(); o.type = 'sine'; o.frequency.value = f * h;
-        v.gain.setValueAtTime(0.0001, t0 + d); v.gain.exponentialRampToValueAtTime(g, t0 + d + 0.015); v.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 1.4);
-        o.connect(v).connect(_ac.destination); o.start(t0 + d); o.stop(t0 + d + 1.45);
-      });
-    });
-  } catch (e) {}
-}
-// 소리는 화면을 한 번 누른 뒤부터 낼 수 있어서 첫 터치 때 미리 준비
-document.addEventListener('pointerdown', () => { try { _ac = _ac || new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === 'suspended') _ac.resume(); } catch (e) {} }, { once: true });
-if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'call') { dingdong(); toast('🔔 입실 태블릿에서 직원을 불러요'); } });
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'att' && !$('app').classList.contains('hidden')) { atTab = 'all'; openAttendance(addDaysISO(0)); } });
 
 // ── 이용권 수정 ──

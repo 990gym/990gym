@@ -4,13 +4,9 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: '990crm', body: e.data ? e.data.text() : '' }; }
-  const show = self.registration.showNotification(d.title || '990crm', {
+  e.waitUntil(self.registration.showNotification(d.title || '990crm', {
     body: d.body || '', tag: d.tag || undefined, icon: '/crm-icon-192.png?v=6', badge: '/crm-icon-192.png?v=6', data: { url: d.url || (String(d.tag || '').startsWith('att-') ? '/crm.html#att' : '/crm.html'), att: String(d.tag || '').startsWith('att-') },
-    ...(d.call ? { requireInteraction: true, vibrate: [300, 150, 300, 150, 300] } : {}),
-  });
-  // 직원 호출: CRM 화면이 열려 있으면 거기서도 '띵동' 울리기
-  const ring = d.call ? self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => list.forEach((c) => c.postMessage({ type: 'call', title: d.title }))) : null;
-  e.waitUntil(Promise.all([show, ring]));
+  }));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
