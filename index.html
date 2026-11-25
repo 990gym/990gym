@@ -286,6 +286,7 @@
   .plan-link::after { content: ' 보기'; font-weight: 500; font-size: 0.85em; }
   .modal-body p { margin-bottom: 0.7rem; }
 </style>
+<script src="/track.js"></script>
 </head>
 <body>
 
@@ -726,6 +727,7 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
       var failMsg = params.get('message');
       history.replaceState({}, '', window.location.pathname);
       try { sessionStorage.removeItem('pendingBilling'); } catch(e) {}
+      T990('fail');
       alert('카드 등록이 완료되지 않았습니다.\n' + (failMsg ? decodeURIComponent(failMsg) + '\n\n' : '') + '다시 시도해주세요.');
       return;
     }
@@ -780,13 +782,16 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
       .then(function(data) {
         loadingDiv.remove();
         if (data.success) {
+          T990('complete');
           alert('구독이 완료되었습니다! 환영합니다 🎉');
         } else {
+          T990('fail');
           alert('오류가 발생했습니다: ' + (data.error || data.message || '다시 시도해주세요'));
         }
       })
       .catch(function(e) {
         loadingDiv.remove();
+        T990('fail');
         alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
       });
     }
@@ -795,6 +800,9 @@ var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
     alert('결제 확인 처리 중 오류가 발생했습니다. 다시 시도하시거나 마이페이지에서 구독 상태를 확인해주세요.');
   }
 })();
+// 유입 기록 (track.js가 막혀 있어도 결제는 그대로 되게)
+function T990(stage) { try { if (window.t990) window.t990(stage); } catch (e) {} }
+function T990vid() { try { return window.t990vid ? window.t990vid() : ''; } catch (e) { return ''; } }
 var selectedPlan = { name: '', price: 0 };
 
 // 애드온 (금액은 서버 lib/pricing.js 와 같아야 함 — 실제 결제 금액은 서버가 다시 계산)
@@ -818,6 +826,7 @@ function updatePayTotal() {
 }
 
 function openPayModal(planName, price) {
+  T990('start');
   selectedPlan = { name: planName, price: price };
   document.getElementById('pay-plan-name').textContent = planName;
   var keys = PLAN_ADDONS[planName] || [];
@@ -867,10 +876,12 @@ async function requestBilling() {
     }));
   } catch(e) {}
 
+  var vid = T990vid();
+  T990('card');
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&addons=' + encodeURIComponent(addons.join(',')) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) ,
-    failUrl: window.location.href.split('?')[0] + '?fail=1',
+    successUrl: window.location.href.split('?')[0] + '?plan=' + encodeURIComponent(selectedPlan.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&addons=' + encodeURIComponent(addons.join(',')) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) + (vid ? '&vid=' + vid : ''),
+    failUrl: window.location.href.split('?')[0] + '?fail=1' + (vid ? '&vid=' + vid : ''),
     customerName: name,
     customerEmail: email,
     customerMobilePhone: phone.replace(/-/g, ''),
@@ -922,6 +933,7 @@ async function handleSubmit() {
       },
       body: JSON.stringify({ name: name, phone: phone })
     });
+    T990('inquiry');
     alert('상담 신청이 완료되었습니다!\n담당자가 빠르게 연락드리겠습니다. 감사합니다!');
     document.getElementById('inquiry-name').value = '';
     document.getElementById('inquiry-phone').value = '';

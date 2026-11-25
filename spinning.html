@@ -234,6 +234,7 @@
     .sheet { border-radius: 18px; max-width: 460px; }
   }
 </style>
+<script src="/track.js"></script>
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -411,6 +412,9 @@ src="https://www.facebook.com/tr?id=1098115099663180&ev=PageView&noscript=1"
 </div>
 
 <script>
+// 유입 기록 (track.js가 막혀 있어도 결제는 그대로 되게)
+function T990(stage) { try { if (window.t990) window.t990(stage); } catch (e) {} }
+function T990vid() { try { return window.t990vid ? window.t990vid() : ''; } catch (e) { return ''; } }
 // 토스페이먼츠 빌링 (index.html과 동일한 키·서버 사용)
 var CLIENT_KEY = 'live_ck_ma60RZblrqzd2wpjj05M8wzYWBn1';
 // 첫 달 50% 프로모션: 실제 결제 금액은 서버(990gym-server/api/_pricing.js)가 정함
@@ -431,6 +435,7 @@ function trackPurchase() {
       var failMsg = params.get('message');
       history.replaceState({}, '', window.location.pathname);
       try { sessionStorage.removeItem('pendingBilling'); } catch (e) {}
+      T990('fail');
       alert('카드 등록이 완료되지 않았습니다.\n' + (failMsg ? decodeURIComponent(failMsg) + '\n\n' : '') + '다시 시도해주세요.');
       return;
     }
@@ -482,13 +487,16 @@ function trackPurchase() {
           if (data.success) {
             purchasedAmount = data.amount || 0;
             trackPurchase();
+            T990('complete');
             document.getElementById('done').classList.add('active');
           } else {
+            T990('fail');
             alert('오류가 발생했습니다: ' + (data.error || data.message || '다시 시도해주세요'));
           }
         })
         .catch(function () {
           loadingDiv.remove();
+          T990('fail');
           alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
         });
     }
@@ -499,6 +507,7 @@ function trackPurchase() {
 })();
 
 function openSheet() {
+  T990('start');
   try { if (window.fbq) fbq('track', 'InitiateCheckout', { value: PLAN.price, currency: 'KRW' }); } catch (e) {}
   document.getElementById('sheet-bg').classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -541,10 +550,12 @@ function requestBilling() {
   } catch (e) {}
 
   var base = window.location.href.split('?')[0];
+  var vid = T990vid();
+  T990('card');
   tossPayments.requestBillingAuth('카드', {
     customerKey: customerKey,
-    successUrl: base + '?plan=' + encodeURIComponent(PLAN.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&promo=' + encodeURIComponent(PLAN.promo) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey),
-    failUrl: base + '?fail=1',
+    successUrl: base + '?plan=' + encodeURIComponent(PLAN.name) + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email=' + encodeURIComponent(email) + '&promo=' + encodeURIComponent(PLAN.promo) + '&success=1' + '&customerKey=' + encodeURIComponent(customerKey) + (vid ? '&vid=' + vid : ''),
+    failUrl: base + '?fail=1' + (vid ? '&vid=' + vid : ''),
     customerName: name,
     customerEmail: email,
     customerMobilePhone: phone.replace(/-/g, '')

@@ -64,6 +64,21 @@
   .refresh-btn { background: var(--gray); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
   .refresh-btn:hover { background: var(--border); }
   table { width: 100%; border-collapse: collapse; }
+  .tf-controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tf-btn { background: var(--gray); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text); }
+  .tf-btn.on { background: var(--navy); color: white; border-color: var(--navy); }
+  .tf-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .tf-note { padding: 12px 24px; font-size: 12px; color: var(--text-light); border-top: 1px solid var(--border); line-height: 1.6; }
+  .tf-sub { padding: 16px 24px 8px; font-size: 14px; font-weight: 600; border-top: 1px solid var(--border); }
+  .tf-table td, .tf-table th { text-align: right; }
+  .tf-table td:first-child, .tf-table th:first-child { text-align: left; max-width: none; white-space: nowrap; }
+  .tf-table tr.tf-total td { font-weight: 700; background: var(--gray); }
+  .tf-yes { color: #16a34a; font-weight: 700; }
+  .tf-no { color: var(--text-light); font-weight: 600; }
+  .tf-recent td, .tf-recent th { text-align: left; }
+  .tf-recent td:first-child { max-width: none; white-space: nowrap; }
+  .tf-sub { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .tf-more { padding: 12px 24px; text-align: center; }
   th { background: var(--gray); padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
   td { padding: 14px 12px; border-bottom: 1px solid var(--border); font-size: 14px; white-space: nowrap; }
   td:first-child { white-space: normal; min-width: 80px; max-width: 120px; word-break: break-word; }
@@ -208,6 +223,7 @@
       <button class="header-link" id="signup-alert-btn" onclick="enableSignupAlerts()" title="새 구독자가 결제를 마치면 이 컴퓨터에 알림을 띄웁니다">🔔 신규 알림 켜기</button>
       <span class="session-timer" id="session-timer"></span>
       <a href="stats.html" class="header-link">📈 구독 추이</a>
+      <a href="#traffic" class="header-link">🧭 유입 분석</a>
       <a href="inquiry.html" class="header-link highlight">📋 상담 신청 <span id="inquiry-count"></span></a>
       <button class="logout-btn" onclick="openPwModal()">🔑 비밀번호 변경</button>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -256,6 +272,32 @@
       <div id="table-body">
         <div class="loading">불러오는 중...</div>
       </div>
+    </div>
+
+    <div class="table-wrap" id="traffic">
+      <div class="table-header" style="flex-wrap:wrap;gap:12px;">
+        <div class="table-title">유입 분석 <span style="font-size:12px;font-weight:400;color:var(--text-light);">어디서 들어와서 어디까지 갔나</span></div>
+        <div class="tf-controls">
+          <button class="tf-btn" data-tf-days="7" onclick="setTraffic({days:7})">7일</button>
+          <button class="tf-btn" data-tf-days="30" onclick="setTraffic({days:30})">30일</button>
+          <button class="tf-btn" data-tf-days="90" onclick="setTraffic({days:90})">90일</button>
+          <span class="tf-sep"></span>
+          <button class="tf-btn" data-tf-page="" onclick="setTraffic({page:''})">전체</button>
+          <button class="tf-btn" data-tf-page="main" onclick="setTraffic({page:'main'})">메인</button>
+          <button class="tf-btn" data-tf-page="spinning" onclick="setTraffic({page:'spinning'})">스피닝</button>
+          <span class="tf-sep"></span>
+          <button class="refresh-btn" onclick="loadTraffic()">🔄</button>
+        </div>
+      </div>
+      <div id="traffic-body"><div class="loading">불러오는 중...</div></div>
+      <div class="tf-sub">
+        <span>전체 기록 <span style="font-size:12px;font-weight:400;color:var(--text-light);">기록 한 줄씩 · 위에서 고른 기간과 페이지</span></span>
+        <span class="tf-controls">
+          <button class="tf-btn" id="tf-rows-btn" onclick="toggleTrafficRows()">펼쳐 보기</button>
+          <button class="tf-btn" onclick="downloadTrafficCsv()">⬇ 엑셀 다운로드</button>
+        </span>
+      </div>
+      <div id="traffic-rows"></div>
     </div>
   </div>
 </div>
@@ -453,6 +495,7 @@ function showAdmin() {
   document.getElementById('admin-screen').style.display = 'block';
   loadSubscribers();
   loadInquiryCount();
+  loadTraffic();
   startSessionTimer();
   document.addEventListener('mousemove', resetSessionTimer);
   document.addEventListener('keydown', resetSessionTimer);
@@ -501,6 +544,120 @@ window.addEventListener('load', function() {
     showAdmin();
   }
 });
+
+// ── 유입 분석: 홈페이지(track.js)가 남긴 기록을 유입경로별로 본다 (Supabase Edge Function 'track') ──
+const TRACK_URL = 'https://twwpxtveupsqwenkprdw.supabase.co/functions/v1/track';
+const trafficOpt = { days: 7, page: '' };
+const TF_STAGE = { start: '신청 창만 열어봄', card: '카드 등록 단계에서 멈춤', fail: '카드 등록·결제 실패', complete: '결제 완료' };
+const tfEsc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function setTraffic(o) { Object.assign(trafficOpt, o); loadTraffic(); if (trafficRowsOpen) loadTrafficRows(TF_ROWS_STEP); }
+// 전체 기록 (한 줄씩) — 펼쳤을 때만 불러온다
+const TF_ROWS_STEP = 200;
+const TF_STAGE_ROW = { visit: '방문', start: '신청 시작', card: '카드 등록으로 이동', complete: '결제 완료', fail: '카드 등록·결제 실패', inquiry: '상담 신청' };
+let trafficRowsOpen = false;
+async function fetchTrafficRows(limit) {
+  const res = await fetch(TRACK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken() || ''}` },
+    body: JSON.stringify({ action: 'rows', days: trafficOpt.days, page: trafficOpt.page, limit }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+const tfTime = (v) => new Date(v).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+// 완료 칸: 결제 완료·상담 신청 줄은 YES, 신청을 시작만 한 줄은 NO, 방문 줄은 비움
+const tfDone = (stage) => (stage === 'complete' || stage === 'inquiry' ? 'YES' : stage === 'visit' ? '' : 'NO');
+function toggleTrafficRows() {
+  trafficRowsOpen = !trafficRowsOpen;
+  document.getElementById('tf-rows-btn').textContent = trafficRowsOpen ? '접기' : '펼쳐 보기';
+  if (trafficRowsOpen) loadTrafficRows(TF_ROWS_STEP);
+  else document.getElementById('traffic-rows').innerHTML = '';
+}
+async function loadTrafficRows(limit) {
+  const box = document.getElementById('traffic-rows');
+  if (!box.innerHTML) box.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const out = await fetchTrafficRows(limit);
+    const rows = out.rows || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">이 기간에는 아직 기록이 없습니다.</div>'; return; }
+    let html = '<table class="tf-recent"><thead><tr><th>시각</th><th>유입경로</th><th>단계</th><th>완료</th><th>페이지</th><th>앱</th><th>캠페인</th><th>방문자 번호</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      const d = tfDone(r.stage);
+      html += `<tr><td>${tfTime(r.created_at)}</td><td>${tfEsc(r.source)}</td><td>${tfEsc(TF_STAGE_ROW[r.stage] || r.stage)}</td><td class="${d === 'YES' ? 'tf-yes' : 'tf-no'}">${d}</td><td>${r.page === 'spinning' ? '스피닝' : '메인'}</td><td>${tfEsc(r.app || '-')}</td><td>${tfEsc(r.campaign || '-')}</td><td style="color:var(--text-light);font-size:12px;">${tfEsc(r.visitor_id)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    if (out.capped && limit < 5000) html += `<div class="tf-more"><button class="tf-btn" onclick="loadTrafficRows(${Math.min(limit + 1000, 5000)})">더 보기 (지금 ${rows.length}줄)</button></div>`;
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = '<div class="empty">전체 기록을 불러오지 못했습니다.</div>';
+  }
+}
+async function downloadTrafficCsv() {
+  try {
+    const out = await fetchTrafficRows(5000);
+    const rows = out.rows || [];
+    if (!rows.length) { alert('이 기간에는 기록이 없습니다.'); return; }
+    const cell = (v) => { let t = String(v == null ? '' : v); if (/^[=+\-@]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+    const lines = [['시각', '유입경로', '단계', '완료', '페이지', '앱', '매체', '캠페인', '방문자 번호'].map(cell).join(',')];
+    rows.forEach(r => lines.push([new Date(r.created_at).toLocaleString('sv-SE'), r.source, TF_STAGE_ROW[r.stage] || r.stage, tfDone(r.stage), r.page === 'spinning' ? '스피닝' : '메인', r.app, r.medium, r.campaign, r.visitor_id].map(cell).join(',')));
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `990_유입기록_${new Date().toLocaleDateString('sv-SE')}_${trafficOpt.days}일.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    if (out.capped) alert('기록이 많아 최근 5,000줄까지만 담았습니다.');
+  } catch (e) {
+    alert('다운로드에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+}
+async function loadTraffic() {
+  const body = document.getElementById('traffic-body');
+  if (!body) return;
+  document.querySelectorAll('[data-tf-days]').forEach(b => b.classList.toggle('on', Number(b.dataset.tfDays) === trafficOpt.days));
+  document.querySelectorAll('[data-tf-page]').forEach(b => b.classList.toggle('on', b.dataset.tfPage === trafficOpt.page));
+  try {
+    const res = await fetch(TRACK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken() || ''}` },
+      body: JSON.stringify({ action: 'report', days: trafficOpt.days, page: trafficOpt.page }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    renderTraffic(await res.json());
+  } catch (e) {
+    body.innerHTML = '<div class="empty">유입 기록을 불러오지 못했습니다.</div>';
+  }
+}
+function renderTraffic(out) {
+  const body = document.getElementById('traffic-body');
+  const rows = out.rows || [];
+  const n = (v) => Number(v || 0);
+  const pct = (a, b) => (n(b) > 0 ? Math.round(n(a) / n(b) * 100) + '%' : '-');
+  const since = out.since ? new Date(out.since).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : null;
+  if (!rows.length) {
+    body.innerHTML = `<div class="empty">이 기간에는 아직 기록이 없습니다.${since ? '' : ' 홈페이지에 방문이 생기면 여기에 쌓입니다.'}</div>`;
+    return;
+  }
+  const sum = { visits: 0, starts: 0, cards: 0, completes: 0, inquiries: 0 };
+  let html = '<table class="tf-table"><thead><tr><th>유입경로</th><th>방문</th><th>신청 시작</th><th>카드 등록</th><th>결제 완료</th><th>완료율</th><th>상담 신청</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    Object.keys(sum).forEach(k => { sum[k] += n(r[k]); });
+    html += `<tr><td>${tfEsc(r.source)}</td><td>${n(r.visits)}</td><td>${n(r.starts)}</td><td>${n(r.cards)}</td><td>${n(r.completes)}</td><td>${pct(r.completes, r.starts)}</td><td>${n(r.inquiries)}</td></tr>`;
+  });
+  html += `<tr class="tf-total"><td>합계</td><td>${sum.visits}</td><td>${sum.starts}</td><td>${sum.cards}</td><td>${sum.completes}</td><td>${pct(sum.completes, sum.starts)}</td><td>${sum.inquiries}</td></tr></tbody></table>`;
+
+  const recent = out.recent || [];
+  if (recent.length) {
+    html += '<div class="tf-sub">최근 신청 시도</div><table class="tf-recent"><thead><tr><th>유입경로</th><th>완료</th><th>어디까지</th><th>페이지</th><th>앱</th><th>시각</th><th>번호</th></tr></thead><tbody>';
+    recent.forEach(r => {
+      const t = new Date(r.started_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      html += `<tr><td>${tfEsc(r.source)}</td><td class="${r.completed ? 'tf-yes' : 'tf-no'}">${r.completed ? 'YES' : 'NO'}</td><td>${tfEsc(TF_STAGE[r.last_stage] || r.last_stage)}</td><td>${r.page === 'spinning' ? '스피닝' : '메인'}</td><td>${tfEsc(r.app || '-')}</td><td>${t}</td><td style="color:var(--text-light);font-size:12px;">${tfEsc(r.visitor)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += `<div class="tf-note">사람 수 기준입니다. 완료율 = 결제 완료 ÷ 신청 시작. 이름·연락처는 기록하지 않고 방문자마다 무작위 번호만 씁니다.${since ? ` 기록 시작: ${since}.` : ''}</div>`;
+  body.innerHTML = html;
+}
 
 async function loadInquiryCount() {
   try {
