@@ -2314,12 +2314,11 @@ function renderDetail(r) {
   const passName = Object.fromEntries(r.passes.map((p) => [p.id, p.product_name]));
   const TL = [
     ...r.payments.map((x) => ({ t: '결제', at: kd(x.paid_at), text: `${esc(passName[x.pass_id] || x.item || '결제')}${x.sales_excluded ? ' <span class="hchip bg-slate-100 text-slate-500">매출 제외</span>' : ''}`, right: `${x.amount < 0 ? '-' : ''}${fmt(Math.abs(x.amount))}원`, who: x.staff_name })),
-    ...(r.visits || []).map((v) => ({ t: '방문', at: kd(v), text: `입실 ${kd(v).slice(11, 16)}` })),
     ...(r.events || []).map((e) => ({ t: ['연락', '할 일'].includes(e.kind) ? '연락' : '메모', at: kd(e.at), text: esc(e.body), who: e.staff_name })),
     ...r.inquiries.map((q) => ({ t: '문의', at: kd(q.inquired_at), text: `${esc(q.raw_note || '문의')}${q.result ? ` · ${esc(q.result)}` : ''}` })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   const TLC = { 결제: 'bg-blue-50 text-blue-700', 방문: 'bg-emerald-50 text-emerald-700', 연락: 'bg-amber-50 text-amber-800', 문의: 'bg-violet-50 text-violet-700', 메모: 'bg-slate-100 text-slate-600' };
-  const tlKinds = ['전체', ...['결제', '방문', '연락', '문의', '메모'].filter((k) => TL.some((x) => x.t === k))];
+  const tlKinds = ['전체', ...['결제', '연락', '문의', '메모'].filter((k) => TL.some((x) => x.t === k))];
   if (!tlKinds.includes(tlFilter)) tlFilter = '전체';
   const tlShown = TL.filter((x) => tlFilter === '전체' || x.t === tlFilter), tlCut = tlMore ? tlShown : tlShown.slice(0, 10);
   const H = r.hold || { can: false, passes: [], lockers: [], now: null }, holdOn = !!(H.now || H.flag);
@@ -2357,7 +2356,6 @@ function renderDetail(r) {
     <div class="mt-3 grid grid-cols-3 gap-2 tabular-nums">
       ${tiles.map(([l, v, c]) => `<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 min-w-0"><span class="text-[11px] font-bold text-slate-500 block">${l}</span><div class="mt-0.5 text-base leading-tight font-extrabold break-keep ${c}">${v}</div></div>`).join('')}
     </div>
-    <button id="d-att" class="mt-2 w-full py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-bold text-slate-700 flex items-center justify-center gap-1.5"><i data-lucide="calendar-days" class="w-4 h-4 text-blue-600"></i>출석부 자세히 보기</button>
 
     <div class="mt-4">
       <div class="flex items-baseline justify-between"><span class="text-sm font-extrabold">이용 이력</span><span class="text-xs text-slate-500">브로제이 + 990crm 등록</span></div>
@@ -2375,12 +2373,12 @@ function renderDetail(r) {
       ${pastH.length ? `<button id="hist-toggle" class="mt-2 w-full py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">${histOpen ? '지난 이용권 접기' : `지난 이용권 ${pastH.length}건 더보기`}</button>` : ''}
     </div>
 
-    ${r.attTotal ? `<div class="mt-4"><div class="flex justify-between items-baseline text-xs mb-2"><span class="text-sm font-extrabold">최근 8주 출석</span><span class="text-slate-500">빨간 막대 = 안 온 주</span></div><div class="relative h-28"><canvas id="member-att"></canvas></div></div>`
-      : '<div class="mt-4 p-3.5 rounded-xl border border-dashed border-slate-300 text-[13px] font-semibold text-slate-500 text-center">입실 체크 태블릿으로 첫 출석하면 8주 출석 그래프가 쌓여요</div>'}
+    ${r.attTotal ? `<div class="mt-4"><div class="flex justify-between items-baseline text-xs mb-2"><span class="text-sm font-extrabold">최근 8주 출석 <span class="font-semibold text-slate-400 text-xs">빨간 막대 = 안 온 주</span></span><button id="d-att" class="shrink-0 flex items-center gap-1 text-[13px] font-bold text-blue-600 hover:underline"><i data-lucide="calendar-days" class="w-4 h-4"></i>출석 달력 보기</button></div><div id="d-att-chart" class="relative h-28 cursor-pointer" title="눌러서 출석 달력 보기"><canvas id="member-att"></canvas></div></div>`
+      : `<div class="mt-4 p-3.5 rounded-xl border border-dashed border-slate-300 text-[13px] font-semibold text-slate-500 flex items-center justify-between gap-2"><span>${m.last_attended_on ? `최근 8주는 출석이 없어요 · 마지막 ${ymd(m.last_attended_on)}` : '아직 출석 기록이 없어요'}</span>${m.last_attended_on ? '<button id="d-att" class="shrink-0 flex items-center gap-1 font-bold text-blue-600 hover:underline"><i data-lucide="calendar-days" class="w-4 h-4"></i>출석 달력 보기</button>' : ''}</div>`}
 
 
     <div class="mt-4">
-      <div class="flex items-center justify-between gap-2"><span class="text-sm font-extrabold">이력</span><span class="text-xs text-slate-400">결제 · 방문(최근 8주) · 연락 · 문의</span></div>
+      <div class="flex items-center justify-between gap-2"><span class="text-sm font-extrabold">이력</span><span class="text-xs text-slate-400">결제 · 연락 · 문의 · 메모 (방문은 출석 달력에서)</span></div>
       <div class="mt-2 flex flex-wrap gap-1">${tlKinds.map((k) => `<button data-k="${k}" class="tl-f px-2.5 py-1 rounded-lg text-[12px] font-bold ${k === tlFilter ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${k}${k === '전체' ? '' : ` ${TL.filter((x) => x.t === k).length}`}</button>`).join('')}</div>
       <ol class="mt-2.5 space-y-2">${tlCut.map((e) => `<li class="flex gap-2 items-start"><span class="shrink-0 w-[38px] text-[11px] font-bold text-slate-400 tabular-nums pt-0.5">${md(e.at.slice(0, 10))}</span><span class="shrink-0 px-1.5 py-0.5 rounded-md text-[11px] font-extrabold ${TLC[e.t]}">${e.t}</span><span class="text-[13px] leading-snug text-slate-800 flex-1 min-w-0">${e.text}${e.who ? ` <span class="text-slate-400">· ${esc(e.who)}</span>` : ''}</span>${e.right ? `<span class="shrink-0 text-[13px] font-extrabold tabular-nums">${e.right}</span>` : ''}</li>`).join('') || '<li class="text-[13px] text-slate-400">아직 기록이 없어요</li>'}</ol>
       ${tlShown.length > 10 ? `<button id="tl-more" class="mt-2 w-full py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">${tlMore ? '접기' : `${tlShown.length - 10}건 더 보기`}</button>` : ''}
@@ -2412,7 +2410,8 @@ function renderDetail(r) {
   const tg = $('hist-toggle'); if (tg) tg.onclick = () => { histOpen = !histOpen; renderDetail(r); };
   document.querySelectorAll('.tl-f').forEach((b) => b.onclick = () => { tlFilter = b.dataset.k; tlMore = false; renderDetail(r); });
   const tm = $('tl-more'); if (tm) tm.onclick = () => { tlMore = !tlMore; renderDetail(r); };
-  $('d-att').onclick = () => openMemberAtt(m);
+  const da = $('d-att'); if (da) da.onclick = () => openMemberAtt(m);
+  const dc = $('d-att-chart'); if (dc) dc.onclick = () => openMemberAtt(m);
   document.querySelectorAll('.pedit').forEach((b) => b.onclick = () => openPassEdit(r, b.dataset.pid));
   document.querySelectorAll('.pundo').forEach((b) => b.onclick = () => undoRegister(r, b.dataset.pid));
   if ($('sl-save')) $('sl-save').onclick = async () => { const b = $('sl-save'), er = $('sl-err'); er.classList.add('hidden'); b.disabled = true; try { renderDetail(await crm('subLocker', { member_id: r.member.id, locker_no: $('sl-no').value.replace(/\D/g, ''), staff: lastStaff.get() || null })); toast('구독 락커를 배정했어요'); D = null; loadDash().catch(() => {}); lockersLoaded = false; } catch (e) { er.textContent = e.message; er.classList.remove('hidden'); } finally { b.disabled = false; } };
