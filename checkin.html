@@ -208,7 +208,8 @@ async function post(body, tokenOverride) {
   if (FAST && FAST_OK.includes(body.action) && String(t || '').startsWith('k2.')) { // 새 열쇠만 서울로 (예전 열쇠는 서울이 못 알아봐서 바로 미국)
     try {
       const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 6000);
-      const r = await fetch(FAST, { ...opt, signal: ctl.signal }); clearTimeout(tm);
+      // 'text/plain' + 본문에 열쇠 → 단순 요청이라 사전 확인 왕복이 없다
+      const r = await fetch(FAST, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ...body, _k: t }), signal: ctl.signal }); clearTimeout(tm);
       if (r.status !== 401 && r.status < 500) { const d = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(d.error || '잠시 후 다시 눌러주세요'), { shown: true }); return d; }
       // 401(서울이 열쇠를 못 알아봄)·5xx는 미국 서버로 (서울 401로는 기기 등록을 지우지 않는다)
     } catch (e) { if (e.shown) throw e; if (e.name !== 'AbortError' && body.action === 'checkin') { /* 연결 실패 = 서버에 안 닿음 → 미국으로 */ } }
@@ -270,7 +271,7 @@ document.querySelectorAll('.key').forEach((b) => b.addEventListener('pointerdown
 function punchBtn(on) { $('punch-btn').classList.toggle('hidden', !on); $('punch-note').classList.toggle('hidden', !on); }
 $('punch-btn').onclick = () => { if (!busy && digits.length === 11 && isStaffNo()) { punchBtn(false); punch(); } };
 async function punch() {
-  busy = true;
+  busy = true; $('pad-msg').textContent = '찍는 중…';
   try {
     const r = await post({ action: 'staffPunch', phone: digits });
     const t = new Date(r.at), hm = `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`;
@@ -285,7 +286,7 @@ async function punch() {
   finally { busy = false; }
 }
 async function find() {
-  busy = true;
+  busy = true; $('pad-msg').textContent = '확인 중…';
   try {
     const { matches } = await post({ action: 'checkinFind', digits });
     if (!matches.length) { $('pad-msg').textContent = '등록된 번호가 없어요. 인포에 말씀해 주세요.'; digits = ''; setTimeout(renderDots, 600); return; }
