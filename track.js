@@ -40,6 +40,8 @@
     var us = (params.get('utm_source') || '').toLowerCase();
     var um = (params.get('utm_medium') || '').toLowerCase();
     if (us) {
+      // 인포에 둔 센터 등록용 QR(?utm_source=center): 현장에서 안내받아 등록한 경우
+      if (/^(center|desk|info|센터)$/.test(us)) return '센터 방문';
       if (/meta|facebook|^fb$|instagram|^ig$/.test(us)) {
         if (us === 'meta' || /paid|cpc|ad/.test(um)) return '메타 광고';
         return /insta|^ig$/.test(us) ? '인스타그램' : '페이스북';
