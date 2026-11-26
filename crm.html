@@ -605,7 +605,7 @@
             <div id="role-new" class="hidden mt-2 flex gap-2"><input id="role-name" maxlength="20" placeholder="예: 실장, 오전 인포, 강사" class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:border-blue-600 outline-none"><button id="role-ok" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold">저장</button></div>
           </div>
         </div>
-        <div class="min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card lg:col-span-full"><h3 class="text-base font-extrabold">대표 숫자 보기</h3><p class="text-xs text-slate-500 mt-1">비용·목표 매출·월별 매출과 비용은 대표 PIN을 넣은 기기에서만 또렷하게 보여요. 센터폰·센터 PC·직원 폰은 흐리게 보여요.</p><div id="own-state" class="mt-3"></div></div>
+        <div class="min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card lg:col-span-full"><h3 class="text-base font-extrabold">대표 숫자 보기</h3><p class="text-xs text-slate-500 mt-1">비용·목표 매출·월별 매출과 비용은 대표·매니저 기기에서만 보여요. 출석 알림을 켤 때 본인 이름과 PIN을 고르면 그 기기가 대표·매니저 기기가 돼요. 알림을 안 켜는 기기는 아래 버튼으로 켜요.</p><div id="own-state" class="mt-3"></div></div>
         <div class="own-wrap min-w-0 bg-white rounded-2xl border border-slate-200 p-5 shadow-card"><button class="own-lock" onclick="ownerSheet()"><span class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/85 text-white text-xs font-extrabold shadow-lg"><i data-lucide="lock" class="w-3.5 h-3.5"></i>권한이 없어요</span></button><div class="own">
           <h3 class="text-base font-extrabold">비용과 목표 매출</h3>
           <p class="text-xs text-slate-500 mt-1">목표 매출 = 고정비(트레이너 빼고) + PT 강사비 + 남기고 싶은 순이익. 매달 이 숫자로 자동 계산돼요.</p>
@@ -807,43 +807,16 @@ const OWN_KEY = 'crm_owner_view';
 function isOwner() { try { return localStorage.getItem(OWN_KEY) === '1' || sessionStorage.getItem(OWN_KEY) === '1'; } catch (e) { return false; } }
 function applyOwner() { document.body.classList.toggle('owner', isOwner()); const b = $('own-state'); if (b) b.innerHTML = ownerStateHtml(); }
 function ownerStateHtml() { const on = isOwner(), keep = (() => { try { return localStorage.getItem(OWN_KEY) === '1'; } catch (e) { return false; } })();
-  return `<div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm ${on ? 'font-extrabold text-emerald-700' : 'font-bold text-slate-600'}">${on ? (keep ? '이 기기는 대표 보기로 켜져 있어요' : '지금 이 창에서만 대표 보기 중이에요') : '이 기기는 직원용이에요 · 비용·목표·손익이 흐리게 보여요'}</span>${on ? '<button onclick="ownerOff()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-700">대표 보기 끄기</button>' : '<button onclick="ownerSheet()" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm font-extrabold">대표 보기 켜기</button>'}</div><button onclick="ownerSheet(true)" class="mt-2 text-xs font-bold text-blue-600 hover:underline">PIN 바꾸기</button>`; }
+  return `<div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm ${on ? 'font-extrabold text-emerald-700' : 'font-bold text-slate-600'}">${on ? '이 기기는 대표·매니저 기기예요 · 비용·목표·손익이 보여요' : '이 기기는 직원·센터 공용이에요 · 비용·목표·손익이 가려져요'}</span>${on ? '<button onclick="ownerOff()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-700">대표 보기 끄기</button>' : '<button onclick="ownerSheet()" class="px-3 py-2 rounded-xl bg-slate-900 text-white text-sm font-extrabold">대표 보기 켜기</button>'}</div>`; }
 function ownerOff() { try { localStorage.removeItem(OWN_KEY); sessionStorage.removeItem(OWN_KEY); } catch (e) {} applyOwner(); ownerRefresh(); toast('대표 보기를 껐어요'); }
 function ownerRefresh() { try { if (D) renderDash(); } catch (e) {} if (!$('tab-sales').classList.contains('hidden')) { try { loadRevenue(); loadSales(); } catch (e) {} } }
-async function ownerSheet(change) {
-  let st;
-  try { st = await crm('ownerPin', {}); } catch (e) { toast(e.message); return; }
-  const setup = !!st.needs_setup, mode = setup ? 'setup' : change ? 'change' : 'unlock';
-  const w = document.createElement('div');
-  w.className = 'fixed inset-0 z-[70] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-4';
-  const inp = (cls, ph) => `<input class="${cls} mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 text-lg font-extrabold tracking-[.4em] text-center outline-none focus:border-blue-600" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="${ph}">`;
-  w.innerHTML = `<div class="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-2xl p-5" style="padding-bottom:max(20px, env(safe-area-inset-bottom))">
-    <div class="text-lg font-extrabold">${mode === 'setup' ? '대표 PIN 정하기' : mode === 'change' ? '대표 PIN 바꾸기' : '대표 보기'}</div>
-    <p class="mt-1 text-xs text-slate-500 leading-relaxed">${mode === 'setup' ? '비용·목표 매출·월별 손익을 볼 때 쓰는 숫자 4~8자리예요. 로그인 비밀번호와 다르게, 대표님만 아는 번호로 정해 주세요.' : mode === 'change' ? '지금 PIN과 새 PIN을 넣어 주세요.' : '대표 PIN을 넣으면 비용·목표 매출·월별 손익이 보여요.'}</p>
-    ${mode !== 'setup' ? inp('ow-pin', mode === 'change' ? '지금 PIN' : 'PIN') : ''}
-    ${mode !== 'unlock' ? inp('ow-new', '새 PIN') + inp('ow-new2', '새 PIN 한 번 더') : ''}
-    ${mode !== 'change' ? `<label class="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-600"><input type="checkbox" class="ow-keep w-4 h-4 accent-blue-600">이 기기는 계속 대표 보기 (내 폰·내 PC)</label><p class="mt-1 text-[11px] text-slate-400">체크 안 하면 이 창을 닫을 때 다시 흐려져요. 센터 PC에서는 체크하지 마세요.</p>` : ''}
-    <p class="ow-err hidden mt-2 text-sm font-bold text-rose-600"></p>
-    <button class="ow-go mt-4 w-full py-3.5 rounded-xl bg-slate-900 text-white font-extrabold">${mode === 'unlock' ? '보기' : '저장'}</button>
-    <button class="ow-x mt-1 w-full py-2.5 text-sm font-bold text-slate-500">닫기</button></div>`;
-  document.body.appendChild(w);
-  const q = (c) => w.querySelector(c), err = (m) => { q('.ow-err').textContent = m; q('.ow-err').classList.remove('hidden'); };
-  q('.ow-x').onclick = () => w.remove(); w.addEventListener('click', (e) => { if (e.target === w) w.remove(); });
-  (q('.ow-pin') || q('.ow-new')).focus();
-  q('.ow-go').onclick = async () => {
-    const pin = q('.ow-pin') ? q('.ow-pin').value : undefined;
-    try {
-      if (mode !== 'unlock') {
-        const a = q('.ow-new').value, b = q('.ow-new2').value;
-        if (!/^\d{4,8}$/.test(a)) return err('숫자 4~8자리로 정해 주세요');
-        if (a !== b) return err('두 번 넣은 새 PIN이 달라요');
-        await crm('ownerPin', { pin, next: a });
-      } else await crm('ownerPin', { pin });
-      if (mode !== 'change') { const keep = q('.ow-keep') && q('.ow-keep').checked; try { (keep ? localStorage : sessionStorage).setItem(OWN_KEY, '1'); } catch (e) {} }
-      w.remove(); applyOwner(); ownerRefresh(); toast(mode === 'change' ? 'PIN을 바꿨어요' : '대표 보기를 켰어요');
-    } catch (e) { err(e.message); }
-  };
-  w.querySelectorAll('input[type=password]').forEach((x) => x.addEventListener('keydown', (e) => { if (e.key === 'Enter') q('.ow-go').click(); }));
+// 알림을 안 켜는 기기(예: 대표 PC)에서 대표 숫자 보기: 대표·매니저 이름 + 본인 PIN
+async function ownerSheet() {
+  const pk = await pickStaff('대표·매니저 이름을 고르고 본인 PIN을 넣으면 이 기기에서 비용·목표 숫자가 보여요. 센터 공용 기기에서는 하지 마세요.');
+  if (!pk) return;
+  if (!pk.lead) { toast('대표·매니저만 볼 수 있어요'); return; }
+  try { localStorage.setItem(OWN_KEY, '1'); } catch (e) {}
+  applyOwner(); ownerRefresh(); toast('이 기기에서 대표 숫자가 보여요');
 }
 applyOwner();
 
@@ -3034,18 +3007,45 @@ function renderLockers() {
 }
 
 // 이 폰 주인 고르기 (알림 받는 범위가 직책으로 정해진다)
+// 이 기기는 누구 기기인지: 센터 공용 / 직원 이름. 대표·매니저를 고르면 본인 PIN(처음이면 정하기) → 그 기기는 대표 숫자가 보이는 기기가 된다.
+const LEAD_RE = /대표|매니저|실장/;
 function pickStaff(note) {
   return new Promise((done) => {
     const list = ((D && D.staff) || STAFF || []).filter((x) => x.name);
+    const isLead = (n) => { const x = list.find((y) => y.name === n); return !!(x && LEAD_RE.test(x.role || '')); };
+    let pinMode = null; // null | 'enter' | 'setup'
     const w = document.createElement('div');
     w.className = 'fixed inset-0 z-[60] bg-slate-900/50 flex items-end sm:items-center justify-center p-4';
-    w.innerHTML = `<div class="w-full max-w-sm bg-white rounded-2xl p-5"><div class="text-base font-extrabold">이 폰은 누구 폰인가요?</div><p class="mt-1 text-xs text-slate-500">${esc(note || '대표·매니저 폰은 모든 알림, 센터폰은 입실·직원 호출·출퇴근, 다른 직원 폰은 입실 알림과 직원 호출만 받아요.')}</p>
-      <select class="pk-sel mt-4 w-full px-3 py-3 rounded-xl border border-slate-300 text-base font-bold bg-white"><option value="">이름 고르기</option><option value="센터폰">센터폰 (공용)</option>${list.map((x) => `<option value="${esc(x.name)}"${x.name === lastStaff.get() ? ' selected' : ''}>${esc(x.name)} · ${esc(x.role || '직원')}</option>`).join('')}</select>
+    const pinIn = (c, ph) => `<input class="${c} mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 text-lg font-extrabold tracking-[.4em] text-center outline-none focus:border-blue-600" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="${ph}">`;
+    w.innerHTML = `<div class="w-full max-w-sm bg-white rounded-2xl p-5"><div class="text-base font-extrabold">이 기기는 누구 기기인가요?</div><p class="mt-1 text-xs text-slate-500 leading-relaxed">${esc(note || '대표·매니저 기기는 모든 알림 + 비용·목표 숫자, 센터 공용은 입실·직원 호출·출퇴근, 다른 직원은 입실·직원 호출만 받아요.')}</p>
+      <select class="pk-sel mt-4 w-full px-3 py-3 rounded-xl border border-slate-300 text-base font-bold bg-white"><option value="">고르기</option><option value="센터폰">센터 공용 (폰·PC)</option>${list.map((x) => `<option value="${esc(x.name)}">${esc(x.name)}${x.role ? ` · ${esc(x.role)}` : ''}</option>`).join('')}</select>
+      <div class="pk-pin hidden"></div>
+      <p class="pk-err hidden mt-2 text-sm font-bold text-rose-600"></p>
       <button class="pk-ok mt-3 w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-extrabold">확인</button>
       <button class="pk-x mt-1 w-full py-2.5 text-sm font-bold text-slate-500">나중에</button></div>`;
     document.body.appendChild(w);
-    w.querySelector('.pk-ok').onclick = () => { const v = w.querySelector('.pk-sel').value; if (!v) { toast('이름을 골라 주세요'); return; } w.remove(); done(v); };
-    w.querySelector('.pk-x').onclick = () => { w.remove(); done(null); };
+    const q = (c) => w.querySelector(c), err = (m) => { q('.pk-err').textContent = m; q('.pk-err').classList.toggle('hidden', !m); };
+    q('.pk-sel').onchange = async () => {
+      const v = q('.pk-sel').value; err(''); pinMode = null; q('.pk-pin').classList.add('hidden'); q('.pk-pin').innerHTML = '';
+      if (!v || !isLead(v)) return;
+      try { const r = await crm('leadPin', { name: v }); pinMode = r.needs_setup ? 'setup' : 'enter'; } catch (e) { err(e.message); return; }
+      q('.pk-pin').innerHTML = pinMode === 'setup' ? `<p class="mt-3 text-xs text-slate-500">${esc(v)}님 PIN을 처음 정해요. 숫자 4~8자리, 로그인 비밀번호와 다르게요.</p>${pinIn('pk-p1', '새 PIN')}${pinIn('pk-p2', '새 PIN 한 번 더')}` : `<p class="mt-3 text-xs text-slate-500">${esc(v)}님 PIN을 넣어 주세요.</p>${pinIn('pk-p1', 'PIN')}`;
+      q('.pk-pin').classList.remove('hidden'); q('.pk-p1').focus();
+    };
+    q('.pk-ok').onclick = async () => {
+      const v = q('.pk-sel').value; if (!v) { err('누구 기기인지 골라 주세요'); return; }
+      let pin = null;
+      if (pinMode) {
+        const a = q('.pk-p1').value;
+        try {
+          if (pinMode === 'setup') { if (!/^\d{4,8}$/.test(a)) return err('숫자 4~8자리로 정해 주세요'); if (a !== q('.pk-p2').value) return err('두 번 넣은 PIN이 달라요'); await crm('leadPin', { name: v, next: a }); }
+          else await crm('leadPin', { name: v, pin: a });
+          pin = a;
+        } catch (e) { err(e.message); return; }
+      }
+      w.remove(); done({ who: v, pin, lead: !!pin });
+    };
+    q('.pk-x').onclick = () => { w.remove(); done(null); };
   });
 }
 let ME = null; // { known, staff_name, lead }
@@ -3065,10 +3065,10 @@ async function pushState() {
   try { ME = await crm('pushWho', { endpoint: sub.endpoint }); } catch (e) { return; }
   if (ME.known && !ME.staff_name && !pushState.asked) { // 예전에 켠 폰: 주인을 한 번 고르게
     pushState.asked = true;
-    const who = await pickStaff('알림을 직책별로 나눠 보내게 됐어요. 이 폰 주인을 한 번만 골라 주세요.');
-    if (who) { try { await crm('pushSubscribe', { sub: sub.toJSON(), staff: who, device: (navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/) || ['기기'])[0] }); if (who !== '센터폰') lastStaff.set(who); ME = await crm('pushWho', { endpoint: sub.endpoint }); toast(who === '센터폰' ? '센터폰으로 저장했어요' : `${who}님 폰으로 저장했어요`); } catch (e) { toast(e.message); } }
+    const pk = await pickStaff('알림을 기기별로 나눠 보내게 됐어요. 이 기기가 누구 기기인지 한 번만 골라 주세요.');
+    if (pk) { try { await crm('pushSubscribe', { sub: sub.toJSON(), staff: pk.who, pin: pk.pin, device: (navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/) || ['기기'])[0] }); deviceSaved(pk); ME = await crm('pushWho', { endpoint: sub.endpoint }); } catch (e) { toast(e.message); } }
   }
-  if (ME.staff_name) $('push-label').textContent = `알림 · ${ME.staff_name}`;
+  if (ME.staff_name) $('push-label').textContent = `알림 · ${ME.staff_name === '센터폰' ? '센터 공용' : ME.staff_name}`;
   if (setLoaded) rpRefresh();
 }
 $('push-btn').addEventListener('click', async () => {
@@ -3082,17 +3082,24 @@ $('push-btn').addEventListener('click', async () => {
     }
     const perm = await Notification.requestPermission(); // 버튼을 누른 순간에 물어봐야 아이폰이 허용 창을 띄운다
     if (perm !== 'granted') { pushHelp(AND ? '이 폰에서 알림이 막혀 있어요.\n① 주소창 왼쪽 아이콘(또는 ⋮ → 설정 → 사이트 설정) → 알림 → 허용\n② 폰 설정 → 애플리케이션 → Chrome(또는 삼성 인터넷) → 알림 켜기\n그다음 이 버튼을 다시 눌러주세요' : '알림이 허용되지 않았어요. 브라우저 설정 → 사이트 설정 → 알림에서 허용해 주세요'); return; }
-    const who = await pickStaff(); if (!who) { toast('누구 폰인지 골라야 알림을 켤 수 있어요'); return; }
-    if (who !== '센터폰') lastStaff.set(who);
+    const pk = await pickStaff(); if (!pk) { toast('누구 기기인지 골라야 알림을 켤 수 있어요'); return; }
+    const who = pk.who;
     const reg = await navigator.serviceWorker.register('/crm-sw.js', { scope: '/' }); await navigator.serviceWorker.ready;
     const { key } = await crm('pushKey');
     const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(key) });
-    await crm('pushSubscribe', { sub: sub.toJSON(), staff: who, device: (navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/) || ['기기'])[0] });
+    await crm('pushSubscribe', { sub: sub.toJSON(), staff: who, pin: pk.pin, device: (navigator.userAgent.match(/iPhone|iPad|Android|Mac|Windows/) || ['기기'])[0] });
+    deviceSaved(pk);
     await crm('pushTest', { sub: sub.toJSON() });
     toast('출석 알림을 켰어요. 시험 알림을 보냈어요');
   } catch (e) { pushHelp(`알림을 켜지 못했어요: ${e.message || e.name || '알 수 없는 오류'}${AND ? '\n크롬을 최신으로 업데이트하고, 절전 모드·데이터 절약을 끈 뒤 다시 눌러주세요' : ''}`); }
   pushState();
 });
+// 기기 주인 저장 뒤: 대표·매니저 기기는 대표 숫자를 계속 보이게, 센터 공용·직원 기기는 가리게
+function deviceSaved(pk) {
+  if (pk.who !== '센터폰') lastStaff.set(pk.who);
+  try { if (pk.lead) localStorage.setItem(OWN_KEY, '1'); else { localStorage.removeItem(OWN_KEY); sessionStorage.removeItem(OWN_KEY); } } catch (e) {}
+  applyOwner(); ownerRefresh();
+}
 // 알림이 안 켜질 때: 이유와 고치는 방법을 오래 보여 준다 (토스트는 너무 빨리 사라져서)
 function pushHelp(msg) {
   const w = document.createElement('div');
